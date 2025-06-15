@@ -1,0 +1,170 @@
+"use client";
+
+import { Button } from "./ui/button";
+import { NotebookList } from "./notebook/nav";
+import { useState, useRef, useEffect } from "react";
+import { PanelLeftInactive, PanelLeft } from "lucide-react";
+import { ThemeSwitch } from "./theme-switch";
+import { DuckDBStatus } from "./duckdb-status-indicator";
+
+const MIN_WIDTH = 200;
+const MAX_WIDTH = 400;
+const DEFAULT_WIDTH = 225;
+const SPACING = 10;
+const CLOSE_DELAY = 300;
+
+interface SidebarHeaderProps {
+  isDocked: boolean;
+  onToggleDock: () => void;
+  onToggleVisibility: () => void;
+}
+
+function SidebarHeader({ isDocked, onToggleDock }: SidebarHeaderProps) {
+  return (
+    <div className="px-3 py-2 flex items-center justify-between">
+      <div className="text-xl tracking-tight font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
+        ducklab
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          className="p-0 size-6 text-muted-foreground"
+          onClick={onToggleDock}
+        >
+          {isDocked ? (
+            <PanelLeftInactive className="size-4" />
+          ) : (
+            <PanelLeft className="size-4" />
+          )}
+        </Button>
+        <ThemeSwitch />
+      </div>
+    </div>
+  );
+}
+
+export function Sidebar() {
+  const [width, setWidth] = useState(DEFAULT_WIDTH);
+  const [isDocked, setIsDocked] = useState(true);
+  const [isVisible, setIsVisible] = useState(true);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const closeTimeoutRef = useRef<NodeJS.Timeout>(null);
+
+  const handleMouseLeave = () => {
+    if (!isDocked) {
+      closeTimeoutRef.current = setTimeout(() => {
+        setIsVisible(false);
+      }, CLOSE_DELAY);
+    }
+  };
+
+  const handleMouseEnter = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+    }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!sidebarRef.current) return;
+      const newWidth = Math.min(Math.max(e.clientX, MIN_WIDTH), MAX_WIDTH);
+      sidebarRef.current.style.width = `${newWidth}px`;
+    };
+
+    const handleMouseUp = () => {
+      if (!sidebarRef.current) return;
+      const finalWidth = parseInt(sidebarRef.current.style.width);
+      setWidth(finalWidth);
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  };
+
+  const handleAddNotebook = () => {
+    // TODO: Implement file picker dialog
+    console.log("Opening file picker");
+  };
+
+  useEffect(() => {
+    const main = document.querySelector("main");
+    if (!main) return;
+
+    if (!isDocked || !isVisible) {
+      main.style.marginLeft = `-${width}px`;
+    } else {
+      main.style.marginLeft = "0";
+    }
+  }, [isDocked, isVisible, width]);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Computed styles
+  const sidebarClasses = [
+    "bg-card relative border-r overflow-ellipsis z-25",
+    !isDocked &&
+      "fixed shadow-xl rounded-lg border z-50 bg-card/85 backdrop-blur-lg motion-reduce:transition-none transition-all duration-150",
+    !isDocked && !isVisible && "translate-x-[-110%]",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const sidebarStyle = {
+    width: `${width}px`,
+    top: !isDocked ? `${SPACING}px` : "0",
+    left: !isDocked ? `${SPACING}px` : "0",
+    height: !isDocked ? `calc(100vh - ${SPACING * 2}px)` : "100vh",
+  };
+
+  return (
+    <>
+      {!isDocked && !isVisible && (
+        <div
+          className="fixed left-0 top-0 w-2 h-full z-[100]"
+          onMouseEnter={() => setIsVisible(true)}
+        />
+      )}
+      <aside
+        ref={sidebarRef}
+        className={sidebarClasses}
+        style={sidebarStyle}
+        onMouseLeave={handleMouseLeave}
+        onMouseEnter={handleMouseEnter}
+      >
+        <div className="flex flex-col h-full">
+          <SidebarHeader
+            isDocked={isDocked}
+            onToggleDock={() => {
+              setIsDocked(!isDocked);
+              //   setWidth(DEFAULT_WIDTH);
+            }}
+            onToggleVisibility={() => setIsVisible(false)}
+          />
+
+          <nav className="flex-1 border-t pt-2">
+            <NotebookList />
+          </nav>
+          <div className="px-3 pb-3">
+            <DuckDBStatus />
+          </div>
+        </div>
+        {isDocked && (
+          <div
+            className="absolute right-[-3px] top-0 z-[50] w-[5px] h-full cursor-col-resize transition-all hover:bg-blue-500/50 active:bg-blue-500"
+            onMouseDown={handleMouseDown}
+          />
+        )}
+      </aside>
+    </>
+  );
+}

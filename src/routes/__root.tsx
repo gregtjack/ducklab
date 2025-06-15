@@ -1,0 +1,115 @@
+/// <reference types="vite/client" />
+import {
+  HeadContent,
+  Link,
+  Outlet,
+  Scripts,
+  createRootRoute,
+} from "@tanstack/react-router";
+import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import * as React from "react";
+import { DefaultCatchBoundary } from "@/components/DefaultCatchBoundary";
+import { NotFound } from "@/components/NotFound";
+import appCss from "@/styles/app.css?url";
+import { seo } from "@/utils/seo";
+import { ThemeProvider } from "@/components/theme-provider";
+import { NotebookProvider } from "@/components/notebook/notebook-context";
+import { Toaster } from "@/components/ui/sonner";
+import { useDuckDBStore } from "@/store/duckdb-store";
+import { Sidebar } from "@/components/sidebar";
+import { useEffect } from "react";
+
+export const Route = createRootRoute({
+  head: () => ({
+    meta: [
+      {
+        charSet: "utf-8",
+      },
+      {
+        name: "viewport",
+        content: "width=device-width, initial-scale=1",
+      },
+      ...seo({
+        title:
+          "TanStack Start | Type-Safe, Client-First, Full-Stack React Framework",
+        description: `TanStack Start is a type-safe, client-first, full-stack React framework. `,
+      }),
+    ],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      {
+        rel: "apple-touch-icon",
+        sizes: "180x180",
+        href: "/apple-touch-icon.png",
+      },
+      {
+        rel: "icon",
+        type: "image/png",
+        sizes: "32x32",
+        href: "/favicon-32x32.png",
+      },
+      {
+        rel: "icon",
+        type: "image/png",
+        sizes: "16x16",
+        href: "/favicon-16x16.png",
+      },
+      { rel: "manifest", href: "/site.webmanifest", color: "#fffff" },
+      { rel: "icon", href: "/favicon.ico" },
+    ],
+    scripts: [
+      {
+        src: "/customScript.js",
+        type: "text/javascript",
+      },
+    ],
+  }),
+  errorComponent: (props) => {
+    return (
+      <RootDocument>
+        <DefaultCatchBoundary {...props} />
+      </RootDocument>
+    );
+  },
+  notFoundComponent: () => <NotFound />,
+  component: RootComponent,
+});
+
+function RootComponent() {
+  const initialize = useDuckDBStore((state) => state.initialize);
+
+  useEffect(() => {
+    initialize().catch(console.error);
+  }, [initialize]);
+
+  return (
+    <RootDocument>
+      <ThemeProvider defaultTheme="dark">
+        <NotebookProvider>
+          <div className="flex h-screen text-gray-900 dark:text-gray-100">
+            <Sidebar />
+            <main className="flex-1 overflow-auto transition-[margin] duration-200">
+              <Outlet />
+            </main>
+          </div>
+        </NotebookProvider>
+        <Toaster />
+      </ThemeProvider>
+    </RootDocument>
+  );
+}
+
+function RootDocument({ children }: { children: React.ReactNode }) {
+  return (
+    <html suppressHydrationWarning>
+      <head>
+        <HeadContent />
+      </head>
+      <body className="antialiased">
+        {children}
+        <TanStackRouterDevtools position="bottom-right" />
+        <Scripts />
+      </body>
+    </html>
+  );
+}
