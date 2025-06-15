@@ -1,26 +1,8 @@
 import { Table } from "@/components/ui/table";
 import * as arrow from "apache-arrow";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Hash,
-  Calendar,
-  Binary,
-  List,
-  HelpCircle,
-  ClockIcon,
-  TypeIcon,
-} from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Hash, Calendar, Binary, List, HelpCircle, ClockIcon, TypeIcon } from "lucide-react";
 import { match, P } from "ts-pattern";
 import { useState } from "react";
 import { TableVirtuoso } from "react-virtuoso";
@@ -39,13 +21,7 @@ interface CellInspectorProps {
   onClose: () => void;
 }
 
-function CellInspector({
-  value,
-  type,
-  column,
-  isOpen,
-  onClose,
-}: CellInspectorProps) {
+function CellInspector({ value, type, column, isOpen, onClose }: CellInspectorProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
@@ -79,19 +55,17 @@ const getDataTypeIcon = (type: arrow.DataType, iconSize: number = 12) => {
         P.instanceOf(arrow.Uint16),
         P.instanceOf(arrow.Uint32),
         P.instanceOf(arrow.Uint64),
-        P.instanceOf(arrow.Float)
+        P.instanceOf(arrow.Float),
       ),
-      () => <Hash size={iconSize} />
+      () => <Hash size={iconSize} />,
     )
-    .with(
-      P.union(P.instanceOf(arrow.DateDay), P.instanceOf(arrow.DateMillisecond)),
-      () => <Calendar size={iconSize} />
-    )
+    .with(P.union(P.instanceOf(arrow.DateDay), P.instanceOf(arrow.DateMillisecond)), () => (
+      <Calendar size={iconSize} />
+    ))
     .with(P.instanceOf(arrow.Timestamp), () => <ClockIcon size={iconSize} />)
-    .with(
-      P.union(P.instanceOf(arrow.Utf8), P.instanceOf(arrow.LargeUtf8)),
-      () => <TypeIcon size={iconSize} />
-    )
+    .with(P.union(P.instanceOf(arrow.Utf8), P.instanceOf(arrow.LargeUtf8)), () => (
+      <TypeIcon size={iconSize} />
+    ))
     .with(P.instanceOf(arrow.Binary), () => <Binary size={iconSize} />)
     .with(P.instanceOf(arrow.List), () => <List size={iconSize} />)
     .otherwise(() => <HelpCircle size={iconSize} />);
@@ -107,9 +81,9 @@ const isNumberType = (type: arrow.DataType) =>
         P.instanceOf(arrow.Uint32),
         P.instanceOf(arrow.Uint64),
         P.instanceOf(arrow.Float),
-        P.instanceOf(arrow.Timestamp)
+        P.instanceOf(arrow.Timestamp),
       ),
-      () => true
+      () => true,
     )
     .otherwise(() => false);
 
@@ -124,10 +98,10 @@ export function ArrowTable({
     column: string;
   } | null>(null);
 
-  const columns = data.schema.fields.map((field) => field.name);
-  const rows = data.toArray().map((row) => {
+  const columns = data.schema.fields.map(field => field.name);
+  const rows = data.toArray().map(row => {
     const obj: Record<string, unknown> = {};
-    columns.forEach((col) => {
+    columns.forEach(col => {
       obj[col] = row[col];
     });
     return obj;
@@ -149,14 +123,14 @@ export function ArrowTable({
           <TooltipProvider delayDuration={500}>
             <tr className="border-b">
               {columns.map((column, index) => {
-                const field = data.schema.fields.find((f) => f.name === column);
+                const field = data.schema.fields.find(f => f.name === column);
                 const dataType = field?.type;
                 return (
                   <th
                     key={column}
                     className={cn(
                       "py-2 px-2 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap bg-accent",
-                      index < columns.length - 1 ? "border-r" : ""
+                      index < columns.length - 1 ? "border-r" : "",
                     )}
                     style={{ minWidth: 150 }}
                   >
@@ -170,9 +144,7 @@ export function ArrowTable({
                       <TooltipContent>
                         <div className="flex items-center gap-4">
                           <span className="text-xs">{column}</span>
-                          <span className="text-xs font-mono">
-                            {dataType?.toString()}
-                          </span>
+                          <span className="text-xs font-mono">{dataType?.toString()}</span>
                         </div>
                       </TooltipContent>
                     </TooltipPrimitive.Root>
@@ -185,7 +157,7 @@ export function ArrowTable({
         itemContent={(index, row) => (
           <>
             {columns.map((column, colIndex) => {
-              const field = data.schema.fields.find((f) => f.name === column);
+              const field = data.schema.fields.find(f => f.name === column);
               const dataType = field?.type;
               return (
                 <td
@@ -193,7 +165,7 @@ export function ArrowTable({
                   className={cn(
                     "px-2 py-1.5 text-xs border-t hover:bg-muted/50 text-foreground",
                     colIndex < columns.length - 1 ? "border-r" : "",
-                    isNumberType(dataType) ? "font-mono" : ""
+                    isNumberType(dataType) ? "font-mono" : "",
                   )}
                   style={{ minWidth: 150 }}
                   onClick={() => {

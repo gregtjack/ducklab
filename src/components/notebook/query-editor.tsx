@@ -11,12 +11,7 @@ interface QueryEditorProps {
   onBlur?: () => void;
 }
 
-export function QueryEditor({
-  initialQuery,
-  onQueryChange,
-  onFocus,
-  onBlur,
-}: QueryEditorProps) {
+export function QueryEditor({ initialQuery, onQueryChange, onFocus, onBlur }: QueryEditorProps) {
   const { theme } = useTheme();
   const [query, setQuery] = useState(initialQuery);
 
@@ -40,7 +35,7 @@ export function QueryEditor({
         language="sql"
         value={query}
         onChange={handleChange}
-        onMount={(editor) => {
+        onMount={editor => {
           editor.onDidFocusEditorWidget(() => {
             onFocus?.();
           });

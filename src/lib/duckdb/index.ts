@@ -1,8 +1,4 @@
-import { type AsyncDuckDB } from "@duckdb/duckdb-wasm";
-
 import * as duckdb from "@duckdb/duckdb-wasm";
-
-export { DuckDBProvider, useDuckDB } from "./provider";
 
 const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
 
@@ -44,16 +40,14 @@ export async function initializeDB(): Promise<duckdb.AsyncDuckDB> {
     const worker_url = URL.createObjectURL(
       new Blob([`importScripts("${bundle.mainWorker}");`], {
         type: "text/javascript",
-      })
+      }),
     );
 
     // Instantiate the asynchronous version of DuckDB-Wasm
     worker = new window.Worker(worker_url);
 
     const logLevel =
-      process.env.NODE_ENV === "development"
-        ? duckdb.LogLevel.DEBUG
-        : duckdb.LogLevel.ERROR;
+      process.env.NODE_ENV === "development" ? duckdb.LogLevel.DEBUG : duckdb.LogLevel.ERROR;
 
     const logger = new duckdb.ConsoleLogger(logLevel);
 
@@ -64,9 +58,7 @@ export async function initializeDB(): Promise<duckdb.AsyncDuckDB> {
     return DB;
   } catch (error) {
     initializationError =
-      error instanceof Error
-        ? error
-        : new DuckDBError("Failed to initialize DuckDB");
+      error instanceof Error ? error : new DuckDBError("Failed to initialize DuckDB");
     throw initializationError;
   } finally {
     isInitializing = false;
@@ -98,5 +90,3 @@ export async function cleanupDB(): Promise<void> {
   initializationError = null;
   isInitializing = false;
 }
-
-export { AsyncDuckDB };

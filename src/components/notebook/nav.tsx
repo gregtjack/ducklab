@@ -1,6 +1,6 @@
 "use client";
 
-import { BookPlusIcon, FileIcon, Trash2Icon } from "lucide-react";
+import { BookPlusIcon, FileIcon, Loader2Icon, Trash2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNotebook } from "@/components/notebook/notebook-context";
 import { PropsWithChildren, useState } from "react";
@@ -45,7 +45,7 @@ function NewNotebookDialog({
             <Input
               id="name"
               value={newNotebookName}
-              onChange={(e) => setNewNotebookName(e.target.value)}
+              onChange={e => setNewNotebookName(e.target.value)}
               placeholder="Enter notebook name"
             />
           </div>
@@ -57,9 +57,19 @@ function NewNotebookDialog({
 }
 
 export function NotebookList() {
-  const { notebooks, activeNotebook, setActiveNotebook, removeNotebook } =
-    useNotebook();
+  const { notebooks, activeNotebook, setActiveNotebook, removeNotebook, isLoading } = useNotebook();
   const [isOpen, setIsOpen] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center h-full text-center px-4">
+        <div className="flex flex-col items-center justify-center w-full p-4">
+          <Loader2Icon className="size-10 text-muted-foreground my-4 animate-spin" />
+          <p className="text-sm text-muted-foreground">Loading notebooks...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -67,12 +77,8 @@ export function NotebookList() {
         <div className="flex flex-col items-center h-full text-center px-4">
           <div className="flex flex-col items-center justify-center w-full border rounded-xl p-4">
             <FileIcon className="size-10 text-muted-foreground my-4" />
-            <h3 className="text-lg text-card-foreground font-medium mb-2">
-              No notebooks
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Create a notebook to get started
-            </p>
+            <h3 className="text-lg text-card-foreground font-medium mb-2">No notebooks</h3>
+            <p className="text-sm text-muted-foreground mb-4">Create a notebook to get started</p>
             <NewNotebookDialog isOpen={isOpen} setIsOpen={setIsOpen}>
               <DialogTrigger asChild>
                 <Button size="default" className="w-full text-xs">
@@ -94,7 +100,7 @@ export function NotebookList() {
             </NewNotebookDialog>
           </div>
           <div className="space-y-1">
-            {notebooks.map((notebook) => (
+            {notebooks.map(notebook => (
               <button
                 key={notebook.id}
                 onClick={() => setActiveNotebook(notebook.id)}

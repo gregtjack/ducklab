@@ -2,21 +2,15 @@
 
 import { useNotebook } from "./notebook-context";
 import { NotebookCell } from "./notebook-cell";
-import { PencilIcon, PlusIcon } from "lucide-react";
+import { Loader2, PencilIcon, PlusIcon } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import React, { useState } from "react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
-import { Input } from "../ui/input";
 
 export function NotebookView() {
-  const { activeNotebook, addCell, updateNotebook } = useNotebook();
+  const { activeNotebook, addCell, updateNotebook, isLoading } = useNotebook();
   const [isEditingName, setIsEditingName] = useState(false);
   const [newName, setNewName] = useState("");
 
@@ -58,13 +52,22 @@ export function NotebookView() {
     );
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="size-4 animate-spin" />
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-[96rem] flex flex-col w-full p-4 gap-4">
       <div className="shrink-0 w-fit">
         {isEditingName ? (
           <input
             value={newName}
-            onChange={(e) => setNewName(e.target.value)}
+            onChange={e => setNewName(e.target.value)}
             onKeyDown={handleNameKeyDown}
             onBlur={handleNameSubmit}
             autoFocus
@@ -120,7 +123,7 @@ function AddCellSeparator({
             onClick={() => handleAddCell(index)}
             className={cn(
               "w-full relative h-4 my-2 opacity-20 transition-all hover:opacity-100 cursor-pointer",
-              className
+              className,
             )}
           >
             <div className="absolute ml-8 inset-0 bg-primary top-1/2 -translate-y-1/2 h-[2px] rounded-full" />

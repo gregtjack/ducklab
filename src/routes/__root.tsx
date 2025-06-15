@@ -1,11 +1,5 @@
 /// <reference types="vite/client" />
-import {
-  HeadContent,
-  Link,
-  Outlet,
-  Scripts,
-  createRootRoute,
-} from "@tanstack/react-router";
+import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import * as React from "react";
 import { DefaultCatchBoundary } from "@/components/DefaultCatchBoundary";
@@ -30,8 +24,7 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1",
       },
       ...seo({
-        title:
-          "TanStack Start | Type-Safe, Client-First, Full-Stack React Framework",
+        title: "TanStack Start | Type-Safe, Client-First, Full-Stack React Framework",
         description: `TanStack Start is a type-safe, client-first, full-stack React framework. `,
       }),
     ],
@@ -64,7 +57,7 @@ export const Route = createRootRoute({
       },
     ],
   }),
-  errorComponent: (props) => {
+  errorComponent: props => {
     return (
       <RootDocument>
         <DefaultCatchBoundary {...props} />
@@ -76,7 +69,7 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
-  const initialize = useDuckDBStore((state) => state.initialize);
+  const initialize = useDuckDBStore(state => state.initialize);
 
   useEffect(() => {
     initialize().catch(console.error);
@@ -103,6 +96,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html suppressHydrationWarning>
       <head>
+        <script src="https://unpkg.com/react-scan/dist/auto.global.js" />
         <HeadContent />
       </head>
       <body className="antialiased">

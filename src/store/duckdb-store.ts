@@ -3,6 +3,7 @@ import * as duckdb from "@duckdb/duckdb-wasm";
 import { getDB, cleanupDB, DuckDBError } from "../lib/duckdb";
 import * as arrow from "apache-arrow";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type QueryResult<T extends arrow.TypeMap = any> = {
   query: string;
   table: arrow.Table<T>;
@@ -14,13 +15,11 @@ interface DuckDBState {
   conn: duckdb.AsyncDuckDBConnection | null;
   isLoading: boolean;
   error: Error | null;
+  errorHistory: Error[] | null;
   memoryUsage: number | null;
   initialize: () => Promise<void>;
   updateMemoryUsage: () => Promise<void>;
-  runQuery: <T extends arrow.TypeMap>(
-    query: string,
-    timeoutMs?: number
-  ) => Promise<QueryResult<T>>;
+  runQuery: <T extends arrow.TypeMap>(query: string, timeoutMs?: number) => Promise<QueryResult<T>>;
   registerFile: (name: string, file: File) => Promise<void>;
   registerURL: (name: string, url: string) => Promise<void>;
   reset: () => Promise<void>;
@@ -32,6 +31,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
   conn: null,
   isLoading: true,
   error: null,
+  errorHistory: null,
   memoryUsage: null,
 
   initialize: async () => {
@@ -42,15 +42,10 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
       set({ db: database, conn: connection, error: null });
 
       const { updateMemoryUsage } = get();
-      const interval = setInterval(updateMemoryUsage, 5000);
       await updateMemoryUsage();
-      (window as any).__duckdb_memory_interval = interval;
     } catch (err) {
       set({
-        error:
-          err instanceof Error
-            ? err
-            : new DuckDBError("Failed to initialize DuckDB"),
+        error: err instanceof Error ? err : new DuckDBError("Failed to initialize DuckDB"),
       });
     } finally {
       set({ isLoading: false });
@@ -62,7 +57,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
     if (!conn) return;
     try {
       const result = await conn.query(
-        "SELECT sum(memory_usage_bytes) as usage FROM duckdb_memory()"
+        "SELECT sum(memory_usage_bytes) as usage FROM duckdb_memory()",
       );
 
       const usage = result.get(0)?.usage as number;
@@ -74,16 +69,16 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
 
   runQuery: async <T extends arrow.TypeMap>(
     query: string,
-    timeoutMs: number = 30000
+    timeoutMs: number = 30000,
   ): Promise<QueryResult<T>> => {
-    const { db, conn } = get();
+    const { db, conn, updateMemoryUsage } = get();
 
     if (!db || !conn) {
       throw new DuckDBError("DuckDB is not initialized.");
     }
 
     try {
-      let start = performance.now();
+      const start = performance.now();
 
       // Create a promise that rejects after timeout
       const timeoutPromise = new Promise((_, reject) => {
@@ -93,13 +88,13 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
       });
 
       // Race between query and timeout
-      const result = (await Promise.race([
-        conn.query<T>(query),
-        timeoutPromise,
-      ])) as arrow.Table;
+      const result = (await Promise.race([conn.query<T>(query), timeoutPromise])) as arrow.Table;
 
-      let end = performance.now();
+      const end = performance.now();
       const queryDuration = end - start;
+
+      set({ error: null });
+      await updateMemoryUsage();
 
       return {
         query,
@@ -107,7 +102,15 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
         duration: queryDuration,
       };
     } catch (err) {
-      throw new Error(String(err), { cause: err });
+      console.error("A DuckDB error occurred", err);
+      set({
+        error: err instanceof Error ? err : new DuckDBError("Failed to run query"),
+        errorHistory: [
+          ...(get().errorHistory || []),
+          err instanceof Error ? err : new DuckDBError("Failed to run query"),
+        ],
+      });
+      throw err;
     }
   },
 
@@ -136,16 +139,9 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
     }
 
     try {
-      await db.registerFileHandle(
-        name,
-        file,
-        duckdb.DuckDBDataProtocol.BROWSER_FILEREADER,
-        true
-      );
+      await db.registerFileHandle(name, file, duckdb.DuckDBDataProtocol.BROWSER_FILEREADER, true);
     } catch (err) {
-      throw new DuckDBError(
-        err instanceof Error ? err.message : "Failed to register file"
-      );
+      throw new DuckDBError(err instanceof Error ? err.message : "Failed to register file");
     }
   },
 
@@ -156,24 +152,19 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
     }
 
     try {
-      await db.registerFileURL(
-        name,
-        url,
-        duckdb.DuckDBDataProtocol.HTTP,
-        false
-      );
+      await db.registerFileURL(name, url, duckdb.DuckDBDataProtocol.HTTP, false);
     } catch (err) {
-      throw new DuckDBError(
-        err instanceof Error ? err.message : "Failed to register URL"
-      );
+      throw new DuckDBError(err instanceof Error ? err.message : "Failed to register URL");
     }
   },
 
   cleanup: async () => {
     // Clear the memory usage interval
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const interval = (window as any).__duckdb_memory_interval;
     if (interval) {
       clearInterval(interval);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       delete (window as any).__duckdb_memory_interval;
     }
 

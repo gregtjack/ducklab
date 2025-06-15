@@ -1,22 +1,11 @@
 "use client";
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useEffect,
-} from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
-import {
-  db,
-  NotebookRecord,
-  CellRecord,
-  DataSourceRecord,
-} from "@/lib/db/notebook-db";
-import { deserialize, serialize } from "@/lib/arrow";
-import { QueryResult } from "@/lib/duckdb/provider";
-import { useDuckDBStore } from "@/store/duckdb-store";
+import { db, NotebookRecord, CellRecord, DataSourceRecord } from "@/lib/db/notebook-db";
+import { deserialize } from "@/lib/arrow";
+// import { QueryResult } from "@/lib/duckdb/provider";
+import { useDuckDBStore, QueryResult } from "@/store/duckdb-store";
 
 export interface DataSource {
   id: string;
@@ -51,37 +40,29 @@ interface NotebookContextType {
   updateNotebook: (id: string, updates: Partial<Notebook>) => Promise<void>;
   addCell: (notebookId: string, cell: Cell, index?: number) => Promise<void>;
   removeCell: (notebookId: string, cellId: string) => Promise<void>;
-  updateCell: (
-    notebookId: string,
-    cellId: string,
-    updates: Partial<Cell>
-  ) => Promise<void>;
+  updateCell: (notebookId: string, cellId: string, updates: Partial<Cell>) => Promise<void>;
   addDataSource: (notebookId: string, dataSource: DataSource) => Promise<void>;
   removeDataSource: (notebookId: string, dataSourceId: string) => Promise<void>;
+  isLoading: boolean;
 }
 
-const NotebookContext = createContext<NotebookContextType | undefined>(
-  undefined
-);
+const NotebookContext = createContext<NotebookContextType | undefined>(undefined);
 
 export function NotebookProvider({ children }: { children: React.ReactNode }) {
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [activeNotebookId, setActiveNotebookId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { reset } = useDuckDBStore();
 
-  const activeNotebook =
-    notebooks.find((n) => n.id === activeNotebookId) || null;
+  const activeNotebook = notebooks.find(n => n.id === activeNotebookId) || null;
 
   // Load notebooks on mount
   useEffect(() => {
     const loadNotebooks = async () => {
       const notebookRecords = await db.notebooks.toArray();
       const loadedNotebooks = await Promise.all(
-        notebookRecords.map(async (record) => {
-          const cells = await db.cells
-            .where("notebookId")
-            .equals(record.id)
-            .sortBy("index");
+        notebookRecords.map(async record => {
+          const cells = await db.cells.where("notebookId").equals(record.id).sortBy("index");
 
           const dataSources = await db.dataSources
             .where("notebookId")
@@ -92,15 +73,15 @@ export function NotebookProvider({ children }: { children: React.ReactNode }) {
             id: record.id,
             name: record.name,
             cells: await Promise.all(
-              cells.map(async (cell) => ({
+              cells.map(async cell => ({
                 id: cell.id,
                 query: cell.query,
                 results: cell.results ? deserialize(cell.results) : null,
                 error: cell.error,
                 isLoading: cell.isLoading,
-              }))
+              })),
             ),
-            dataSources: dataSources.map((ds) => ({
+            dataSources: dataSources.map(ds => ({
               id: ds.id,
               name: ds.name,
               type: ds.type,
@@ -110,12 +91,13 @@ export function NotebookProvider({ children }: { children: React.ReactNode }) {
                 : undefined,
             })),
           };
-        })
+        }),
       );
       setNotebooks(loadedNotebooks as Notebook[]);
+      setIsLoading(false);
     };
 
-    loadNotebooks();
+    void loadNotebooks();
   }, []);
 
   const createNotebook = useCallback(async (name: string) => {
@@ -160,97 +142,80 @@ export function NotebookProvider({ children }: { children: React.ReactNode }) {
       dataSources: [],
     };
 
-    setNotebooks((prev) => [...prev, newNotebook]);
+    setNotebooks(prev => [...prev, newNotebook]);
     setActiveNotebookId(id);
   }, []);
 
   const removeNotebook = useCallback(
     async (id: string) => {
-      await db.transaction(
-        "rw",
-        [db.notebooks, db.cells, db.dataSources],
-        async () => {
-          await db.notebooks.delete(id);
-          await db.cells.where("notebookId").equals(id).delete();
-          await db.dataSources.where("notebookId").equals(id).delete();
-        }
-      );
+      await db.transaction("rw", [db.notebooks, db.cells, db.dataSources], async () => {
+        await db.notebooks.delete(id);
+        await db.cells.where("notebookId").equals(id).delete();
+        await db.dataSources.where("notebookId").equals(id).delete();
+      });
 
-      setNotebooks((prev) => prev.filter((n) => n.id !== id));
+      setNotebooks(prev => prev.filter(n => n.id !== id));
       if (activeNotebookId === id) {
         setActiveNotebookId(null);
       }
     },
-    [activeNotebookId]
+    [activeNotebookId],
   );
 
-  const setActiveNotebook = useCallback(
-    async (id: string) => {
-      setActiveNotebookId(id);
-      await reset();
-    },
-    [reset]
-  );
+  const setActiveNotebook = useCallback(async (id: string) => {
+    setActiveNotebookId(id);
+    await reset();
+  }, []);
 
-  const updateNotebook = useCallback(
-    async (id: string, updates: Partial<Notebook>) => {
-      const now = new Date();
-      const notebookRecord: Partial<NotebookRecord> = {
-        ...updates,
-        updatedAt: now,
-      };
+  const updateNotebook = useCallback(async (id: string, updates: Partial<Notebook>) => {
+    const now = new Date();
+    const notebookRecord: Partial<NotebookRecord> = {
+      ...updates,
+      updatedAt: now,
+    };
 
-      await db.notebooks.update(id, notebookRecord);
+    await db.notebooks.update(id, notebookRecord);
 
-      setNotebooks((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, ...updates } : n))
-      );
-    },
-    []
-  );
+    setNotebooks(prev => prev.map(n => (n.id === id ? { ...n, ...updates } : n)));
+  }, []);
 
-  const addCell = useCallback(
-    async (notebookId: string, cell: Cell, index?: number) => {
-      const now = new Date();
-      const cellRecord: CellRecord = {
-        id: cell.id,
-        index: index ?? 0,
-        notebookId,
-        query: cell.query,
-        results: null,
-        error: cell.error,
-        isLoading: cell.isLoading,
-        createdAt: now,
-        updatedAt: now,
-      };
+  const addCell = useCallback(async (notebookId: string, cell: Cell, index?: number) => {
+    const now = new Date();
+    const cellRecord: CellRecord = {
+      id: cell.id,
+      index: index ?? 0,
+      notebookId,
+      query: cell.query,
+      results: null,
+      error: cell.error,
+      isLoading: cell.isLoading,
+      createdAt: now,
+      updatedAt: now,
+    };
 
-      await db.cells.add(cellRecord);
+    await db.cells.add(cellRecord);
 
-      setNotebooks((prev) =>
-        prev.map((n) => {
-          if (n.id !== notebookId) return n;
+    setNotebooks(prev =>
+      prev.map(n => {
+        if (n.id !== notebookId) return n;
 
-          const cells =
-            index !== undefined
-              ? [...n.cells.slice(0, index), cell, ...n.cells.slice(index)]
-              : [...n.cells, cell];
+        const cells =
+          index !== undefined
+            ? [...n.cells.slice(0, index), cell, ...n.cells.slice(index)]
+            : [...n.cells, cell];
 
-          return { ...n, cells };
-        })
-      );
-    },
-    []
-  );
+        return { ...n, cells };
+      }),
+    );
+  }, []);
 
   const removeCell = useCallback(async (notebookId: string, cellId: string) => {
     await db.cells.delete(cellId);
 
-    setNotebooks((prev) =>
-      prev.map((n) =>
-        n.id === notebookId
-          ? { ...n, cells: n.cells.filter((c) => c.id !== cellId) }
-          : n
-      )
+    setNotebooks(prev =>
+      prev.map(n =>
+        n.id === notebookId ? { ...n, cells: n.cells.filter(c => c.id !== cellId) } : n,
+      ),
     );
   }, []);
 
@@ -265,70 +230,56 @@ export function NotebookProvider({ children }: { children: React.ReactNode }) {
 
       await db.cells.update(cellId, cellRecord);
 
-      setNotebooks((prev) =>
-        prev.map((n) =>
+      setNotebooks(prev =>
+        prev.map(n =>
           n.id === notebookId
             ? {
                 ...n,
-                cells: n.cells.map((c) =>
-                  c.id === cellId ? { ...c, ...updates } : c
-                ),
+                cells: n.cells.map(c => (c.id === cellId ? { ...c, ...updates } : c)),
               }
-            : n
-        )
+            : n,
+        ),
       );
     },
-    []
+    [],
   );
 
-  const addDataSource = useCallback(
-    async (notebookId: string, dataSource: DataSource) => {
-      const now = new Date();
-      const dataSourceRecord: DataSourceRecord = {
-        id: dataSource.id,
-        notebookId,
-        name: dataSource.name,
-        type: dataSource.type,
-        path: dataSource.path,
-        fileData: dataSource.file
-          ? await fileToBase64(dataSource.file)
-          : undefined,
-        createdAt: now,
-        updatedAt: now,
-      };
+  const addDataSource = useCallback(async (notebookId: string, dataSource: DataSource) => {
+    const now = new Date();
+    const dataSourceRecord: DataSourceRecord = {
+      id: dataSource.id,
+      notebookId,
+      name: dataSource.name,
+      type: dataSource.type,
+      path: dataSource.path,
+      fileData: dataSource.file ? await fileToBase64(dataSource.file) : undefined,
+      createdAt: now,
+      updatedAt: now,
+    };
 
-      await db.dataSources.add(dataSourceRecord);
+    await db.dataSources.add(dataSourceRecord);
 
-      setNotebooks((prev) =>
-        prev.map((n) =>
-          n.id === notebookId
-            ? { ...n, dataSources: [...n.dataSources, dataSource] }
-            : n
-        )
-      );
-    },
-    []
-  );
+    setNotebooks(prev =>
+      prev.map(n =>
+        n.id === notebookId ? { ...n, dataSources: [...n.dataSources, dataSource] } : n,
+      ),
+    );
+  }, []);
 
-  const removeDataSource = useCallback(
-    async (notebookId: string, dataSourceId: string) => {
-      await db.dataSources.delete(dataSourceId);
+  const removeDataSource = useCallback(async (notebookId: string, dataSourceId: string) => {
+    await db.dataSources.delete(dataSourceId);
 
-      setNotebooks((prev) =>
-        prev.map((n) =>
-          n.id === notebookId
-            ? {
-                ...n,
-                dataSources: n.dataSources.filter(
-                  (ds) => ds.id !== dataSourceId
-                ),
-              }
-            : n
-        )
-      );
-    },
-    []
-  );
+    setNotebooks(prev =>
+      prev.map(n =>
+        n.id === notebookId
+          ? {
+              ...n,
+              dataSources: n.dataSources.filter(ds => ds.id !== dataSourceId),
+            }
+          : n,
+      ),
+    );
+  }, []);
 
   const value = {
     notebooks,
@@ -342,13 +293,10 @@ export function NotebookProvider({ children }: { children: React.ReactNode }) {
     updateCell,
     addDataSource,
     removeDataSource,
+    isLoading,
   };
 
-  return (
-    <NotebookContext.Provider value={value}>
-      {children}
-    </NotebookContext.Provider>
-  );
+  return <NotebookContext.Provider value={value}>{children}</NotebookContext.Provider>;
 }
 
 export function useNotebook() {
@@ -370,6 +318,6 @@ async function fileToBase64(file: File): Promise<string> {
       const base64Data = base64.split(",")[1];
       resolve(base64Data);
     };
-    reader.onerror = (error) => reject(error);
+    reader.onerror = error => reject(error);
   });
 }

@@ -22,20 +22,12 @@ interface SidebarHeaderProps {
 function SidebarHeader({ isDocked, onToggleDock }: SidebarHeaderProps) {
   return (
     <div className="px-3 py-2 flex items-center justify-between">
-      <div className="text-xl tracking-tight font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
+      <div className="text-2xl tracking-tight font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
         ducklab
       </div>
       <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          className="p-0 size-6 text-muted-foreground"
-          onClick={onToggleDock}
-        >
-          {isDocked ? (
-            <PanelLeftInactive className="size-4" />
-          ) : (
-            <PanelLeft className="size-4" />
-          )}
+        <Button variant="ghost" className="p-0 size-6 text-muted-foreground" onClick={onToggleDock}>
+          {isDocked ? <PanelLeftInactive className="size-4" /> : <PanelLeft className="size-4" />}
         </Button>
         <ThemeSwitch />
       </div>
@@ -111,7 +103,7 @@ export function Sidebar() {
 
   // Computed styles
   const sidebarClasses = [
-    "bg-card relative border-r overflow-ellipsis z-25",
+    "bg-sidebar relative border-r overflow-ellipsis z-25",
     !isDocked &&
       "fixed shadow-xl rounded-lg border z-50 bg-card/85 backdrop-blur-lg motion-reduce:transition-none transition-all duration-150",
     !isDocked && !isVisible && "translate-x-[-110%]",
