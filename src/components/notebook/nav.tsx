@@ -1,6 +1,6 @@
 "use client";
 
-import { BookPlusIcon, FileIcon, Loader2Icon, Trash2Icon } from "lucide-react";
+import { BookPlusIcon, Loader2Icon, MoreVerticalIcon, NotebookIcon, Trash2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNotebook } from "@/components/notebook/notebook-context";
 import { PropsWithChildren, useState } from "react";
@@ -13,6 +13,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 function NewNotebookDialog({
   isOpen,
@@ -72,18 +78,18 @@ export function NotebookList() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       {notebooks.length === 0 ? (
         <div className="flex flex-col items-center h-full text-center px-4">
-          <div className="flex flex-col items-center justify-center w-full border rounded-xl p-4">
-            <FileIcon className="size-10 text-muted-foreground my-4" />
+          <div className="flex flex-col items-center justify-center w-full bg-gradient-to-br from-primary/15 to-secondary/10 rounded-xl p-4">
+            <NotebookIcon className="size-10 text-muted-foreground my-4" />
             <h3 className="text-lg text-card-foreground font-medium mb-2">No notebooks</h3>
             <p className="text-sm text-muted-foreground mb-4">Create a notebook to get started</p>
             <NewNotebookDialog isOpen={isOpen} setIsOpen={setIsOpen}>
               <DialogTrigger asChild>
-                <Button size="default" className="w-full text-xs">
-                  Create
-                  <BookPlusIcon className="size-4" />
+                <Button size="sm">
+                  Create notebook
+                  <BookPlusIcon />
                 </Button>
               </DialogTrigger>
             </NewNotebookDialog>
@@ -104,19 +110,34 @@ export function NotebookList() {
               <button
                 key={notebook.id}
                 onClick={() => setActiveNotebook(notebook.id)}
-                className={`w-full flex items-center justify-between p-2 rounded-sm h-8 transition-colors hover:bg-accent cursor-pointer hover:text-accent-foreground ${
-                  activeNotebook?.id === notebook.id
-                    ? "bg-accent text-accent-foreground border font-semibold"
-                    : ""
-                }`}
+                className={`w-full flex items-center justify-between p-2 rounded-sm h-8 transition-colors hover:bg-accent cursor-pointer hover:text-accent-foreground ${activeNotebook?.id === notebook.id
+                  ? "bg-accent text-accent-foreground border font-semibold"
+                  : ""
+                  }`}
               >
                 <span className="text-sm truncate">{notebook.name}</span>
-                <button
-                  className="flex items-center justify-center text-muted-foreground size-5 hover:text-red-500 p-0"
-                  onClick={() => removeNotebook(notebook.id)}
-                >
-                  <Trash2Icon className="size-4" />
-                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className="flex items-center justify-center text-muted-foreground size-5 hover:text-foreground p-0"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MoreVerticalIcon className="size-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      className=""
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeNotebook(notebook.id);
+                      }}
+                    >
+                      <Trash2Icon className="size-4" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </button>
             ))}
           </div>

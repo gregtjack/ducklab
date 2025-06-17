@@ -10,6 +10,24 @@ export type QueryResult<T extends arrow.TypeMap = any> = {
   duration: number;
 };
 
+export type FileFormat = "csv" | "json" | "parquet" | "arrow";
+
+export interface ImportOptions {
+  tableName: string;
+  format: FileFormat;
+  // CSV specific options
+  delimiter?: string;
+  header?: boolean;
+  autoDetect?: boolean;
+  sampleSize?: number;
+  // JSON specific options
+  jsonFormat?: "auto" | "newline_delimited" | "records";
+  // Parquet specific options
+  compression?: string;
+  // Arrow specific options
+  arrowSchema?: arrow.Schema;
+}
+
 interface DuckDBState {
   db: duckdb.AsyncDuckDB | null;
   conn: duckdb.AsyncDuckDBConnection | null;
@@ -22,6 +40,13 @@ interface DuckDBState {
   runQuery: <T extends arrow.TypeMap>(query: string, timeoutMs?: number) => Promise<QueryResult<T>>;
   registerFile: (name: string, file: File) => Promise<void>;
   registerURL: (name: string, url: string) => Promise<void>;
+  importFile: (file: File, options: ImportOptions) => Promise<void>;
+  importFromURL: (url: string, options: ImportOptions) => Promise<void>;
+  importFromRegisteredFile: (fileName: string, options: ImportOptions) => Promise<void>;
+  importCSV: (fileName: string, options: ImportOptions) => Promise<void>;
+  buildJSONImportQuery: (fileName: string, options: ImportOptions) => string;
+  importParquet: (fileName: string, options: ImportOptions) => Promise<void>;
+  buildArrowImportQuery: (fileName: string, options: ImportOptions) => string;
   reset: () => Promise<void>;
   cleanup: () => Promise<void>;
 }
@@ -114,24 +139,6 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
     }
   },
 
-  reset: async () => {
-    const { db, conn } = get();
-    if (!db) {
-      throw new DuckDBError("DuckDB is not ready yet.");
-    }
-
-    await conn?.close();
-    await db.reset();
-
-    // Re-establish the connection
-    const connection = await db.connect();
-    set({
-      conn: connection,
-      memoryUsage: null,
-      error: null,
-    });
-  },
-
   registerFile: async (name: string, file: File): Promise<void> => {
     const { db } = get();
     if (!db) {
@@ -156,6 +163,141 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
     } catch (err) {
       throw new DuckDBError(err instanceof Error ? err.message : "Failed to register URL");
     }
+  },
+
+  importFile: async (file: File, options: ImportOptions): Promise<void> => {
+    const { db, conn } = get();
+    if (!db || !conn) {
+      throw new DuckDBError("DuckDB is not ready yet.");
+    }
+
+    try {
+      const fileName = `${options.format}_${Date.now()}_${file.name}`;
+
+      // Register the file
+      await db.registerFileHandle(fileName, file, duckdb.DuckDBDataProtocol.BROWSER_FILEREADER, true);
+
+      // Import based on format
+      await get().importFromRegisteredFile(fileName, options);
+      await get().updateMemoryUsage();
+    } catch (err) {
+      throw new DuckDBError(err instanceof Error ? err.message : `Failed to import ${options.format} file`);
+    }
+  },
+
+  importFromURL: async (url: string, options: ImportOptions): Promise<void> => {
+    const { db, conn } = get();
+    if (!db || !conn) {
+      throw new DuckDBError("DuckDB is not ready yet.");
+    }
+
+    try {
+      const fileName = `${options.format}_url_${Date.now()}`;
+
+      // Register the URL
+      await db.registerFileURL(fileName, url, duckdb.DuckDBDataProtocol.HTTP, false);
+
+      // Import based on format
+      await get().importFromRegisteredFile(fileName, options);
+      await get().updateMemoryUsage();
+    } catch (err) {
+      throw new DuckDBError(err instanceof Error ? err.message : `Failed to import ${options.format} from URL`);
+    }
+  },
+
+  // Helper method to import from already registered file
+  importFromRegisteredFile: async (fileName: string, options: ImportOptions): Promise<void> => {
+    const { conn } = get();
+    if (!conn) {
+      throw new DuckDBError("DuckDB is not ready yet.");
+    }
+
+    switch (options.format) {
+      case "csv":
+        await get().importCSV(fileName, options);
+        break;
+      case "json":
+        // await get().importJSON(fileName, options);
+        break;
+      case "parquet":
+        await get().importParquet(fileName, options);
+        break;
+      case "arrow":
+        // await get().importArrow(fileName, options);
+        break;
+      default:
+        throw new DuckDBError(`Unsupported file format: ${options.format}`);
+    }
+  },
+
+  importCSV: async (fileName: string, options: ImportOptions): Promise<void> => {
+    const { conn } = get();
+    if (!conn) {
+      throw new DuckDBError("DuckDB is not ready yet.");
+    }
+
+    await conn.insertCSVFromPath(fileName, {
+      schema: 'main',
+      name: options.tableName,
+      delimiter: options.delimiter,
+      header: options.header,
+      detect: options.autoDetect,
+      dateFormat: 'auto',
+    });
+  },
+
+  buildJSONImportQuery: (fileName: string, options: ImportOptions): string => {
+    const jsonOptions = [];
+    if (options.jsonFormat && options.jsonFormat !== "auto") {
+      jsonOptions.push(`format='${options.jsonFormat}'`);
+    }
+
+    const optionsString = jsonOptions.length > 0 ? `(${jsonOptions.join(', ')})` : '';
+
+    return `
+      CREATE TABLE ${options.tableName} AS 
+      SELECT * FROM read_json('${fileName}'${optionsString})
+    `;
+  },
+
+  importParquet: async (fileName: string, options: ImportOptions): Promise<void> => {
+    const { conn } = get();
+    if (!conn) {
+      throw new DuckDBError("DuckDB is not ready yet.");
+    }
+
+    await conn.query(`
+      CREATE TABLE ${options.tableName} AS 
+      SELECT * FROM read_parquet('${fileName}');
+    `);
+  },
+
+  buildArrowImportQuery: (fileName: string, options: ImportOptions): string => {
+    // For Arrow files, we'll use the read_parquet function as a placeholder
+    // since DuckDB doesn't have a direct read_arrow function
+    // In a real implementation, you might need to convert Arrow to Parquet first
+    return `
+      CREATE TABLE ${options.tableName} AS 
+      SELECT * FROM read_parquet('${fileName}')
+    `;
+  },
+
+  reset: async () => {
+    const { db, conn } = get();
+    if (!db) {
+      throw new DuckDBError("DuckDB is not ready yet.");
+    }
+
+    await conn?.close();
+    await db.reset();
+
+    // Re-establish the connection
+    const connection = await db.connect();
+    set({
+      conn: connection,
+      memoryUsage: null,
+      error: null,
+    });
   },
 
   cleanup: async () => {

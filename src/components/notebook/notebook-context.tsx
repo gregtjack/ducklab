@@ -164,7 +164,6 @@ export function NotebookProvider({ children }: { children: React.ReactNode }) {
 
   const setActiveNotebook = useCallback(async (id: string) => {
     setActiveNotebookId(id);
-    await reset();
   }, []);
 
   const updateNotebook = useCallback(async (id: string, updates: Partial<Notebook>) => {
@@ -234,9 +233,9 @@ export function NotebookProvider({ children }: { children: React.ReactNode }) {
         prev.map(n =>
           n.id === notebookId
             ? {
-                ...n,
-                cells: n.cells.map(c => (c.id === cellId ? { ...c, ...updates } : c)),
-              }
+              ...n,
+              cells: n.cells.map(c => (c.id === cellId ? { ...c, ...updates } : c)),
+            }
             : n,
         ),
       );
@@ -273,9 +272,9 @@ export function NotebookProvider({ children }: { children: React.ReactNode }) {
       prev.map(n =>
         n.id === notebookId
           ? {
-              ...n,
-              dataSources: n.dataSources.filter(ds => ds.id !== dataSourceId),
-            }
+            ...n,
+            dataSources: n.dataSources.filter(ds => ds.id !== dataSourceId),
+          }
           : n,
       ),
     );

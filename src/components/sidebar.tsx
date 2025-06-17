@@ -2,6 +2,7 @@
 
 import { Button } from "./ui/button";
 import { NotebookList } from "./notebook/nav";
+import { CatalogList } from "./catalog/catalog-list";
 import { useState, useRef, useEffect } from "react";
 import { PanelLeftInactive, PanelLeft } from "lucide-react";
 import { ThemeSwitch } from "./theme-switch";
@@ -77,11 +78,6 @@ export function Sidebar() {
     document.addEventListener("mouseup", handleMouseUp);
   };
 
-  const handleAddNotebook = () => {
-    // TODO: Implement file picker dialog
-    console.log("Opening file picker");
-  };
-
   useEffect(() => {
     const main = document.querySelector("main");
     if (!main) return;
@@ -143,8 +139,9 @@ export function Sidebar() {
             onToggleVisibility={() => setIsVisible(false)}
           />
 
-          <nav className="flex-1 border-t pt-2">
+          <nav className="flex-1 border-t pt-2 space-y-2">
             <NotebookList />
+            <CatalogList />
           </nav>
           <div className="px-3 pb-3">
             <DuckDBStatus />

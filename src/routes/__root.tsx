@@ -86,7 +86,7 @@ function RootComponent() {
             </main>
           </div>
         </NotebookProvider>
-        <Toaster />
+        <Toaster richColors />
       </ThemeProvider>
     </RootDocument>
   );
