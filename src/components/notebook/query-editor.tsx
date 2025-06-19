@@ -4,6 +4,7 @@ import { Editor, useMonaco } from "@monaco-editor/react";
 import { useTheme } from "@/components/theme-provider";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useCatalogStore } from "@/store/catalog-store";
+import { languages } from "monaco-editor";
 
 
 interface QueryEditorProps {
@@ -64,7 +65,20 @@ export function QueryEditor({ initialQuery, onQueryChange, onFocus, onBlur }: Qu
     // Register completion provider for table names
     const completionProvider = monaco.languages.registerCompletionItemProvider('sql', {
       provideCompletionItems: (model, position) => {
-        const suggestions: CompletionItem[] = [];
+        const suggestions: {
+          label: string;
+          kind: languages.CompletionItemKind;
+          insertText: string;
+          detail?: string;
+          documentation?: { value: string; };
+          sortText: string;
+          range: {
+            startLineNumber: number;
+            endLineNumber: number;
+            startColumn: number;
+            endColumn: number;
+          };
+        }[] = [];
 
         // Get the word range for replacement
         const word = model.getWordUntilPosition(position);

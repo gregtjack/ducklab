@@ -1,6 +1,6 @@
 import { useDuckDBStore } from "@/store/duckdb-store";
 import { Button } from "./ui/button";
-import { RefreshCcw, Info } from "lucide-react";
+import { RefreshCcw, Info, DatabaseZap } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -30,9 +30,10 @@ export function DuckDBStatus() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <div className="flex flex-col gap-1 p-2 rounded-md hover:bg-accent cursor-pointer">
+        <div className="flex flex-col gap-1 p-2 rounded hover:bg-accent cursor-pointer">
           <div className="flex items-center gap-2 text-xs">
-            <span className="font-medium text-xs">DuckDB</span>
+            <DatabaseZap className="size-4" />
+            <span className="font-medium text-xs">DuckDB Status</span>
             {isLoading && <span className="text-yellow-500">Initializing...</span>}
             {error && (
               <div className="flex items-center gap-1 justify-between w-full">
@@ -57,7 +58,6 @@ export function DuckDBStatus() {
             {!isLoading && !error && (
               <div className="flex items-center gap-1 text-green-500">
                 <div className="size-2 rounded-full bg-green-500" />
-                <span>Ready</span>
               </div>
             )}
           </div>

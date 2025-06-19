@@ -1,8 +1,7 @@
-import { Table } from "@/components/ui/table";
 import * as arrow from "apache-arrow";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Hash, Calendar, Binary, List, HelpCircle, ClockIcon, TypeIcon } from "lucide-react";
+import { Hash, Calendar, Binary, List, HelpCircle, ClockIcon, TypeIcon, FlagTriangleRight } from "lucide-react";
 import { match, P } from "ts-pattern";
 import { useState } from "react";
 import { TableVirtuoso } from "react-virtuoso";
@@ -68,6 +67,7 @@ const getDataTypeIcon = (type: arrow.DataType, iconSize: number = 12) => {
     ))
     .with(P.instanceOf(arrow.Binary), () => <Binary size={iconSize} />)
     .with(P.instanceOf(arrow.List), () => <List size={iconSize} />)
+    .with(P.instanceOf(arrow.Bool), () => <FlagTriangleRight size={iconSize} />)
     .otherwise(() => <HelpCircle size={iconSize} />);
 };
 

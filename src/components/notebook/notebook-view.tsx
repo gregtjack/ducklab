@@ -67,6 +67,7 @@ export function NotebookView() {
         {isEditingName ? (
           <input
             value={newName}
+            onFocus={e => e.target.select()}
             onChange={e => setNewName(e.target.value)}
             onKeyDown={handleNameKeyDown}
             onBlur={handleNameSubmit}

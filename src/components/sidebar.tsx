@@ -101,13 +101,13 @@ export function Sidebar() {
   const sidebarClasses = [
     "bg-sidebar relative border-r overflow-ellipsis z-25",
     !isDocked &&
-      "fixed shadow-xl rounded-lg border z-50 bg-card/85 backdrop-blur-lg motion-reduce:transition-none transition-all duration-150",
+    "fixed shadow-xl rounded border z-50 bg-card/85 backdrop-blur-lg motion-reduce:transition-none transition-all duration-150",
     !isDocked && !isVisible && "translate-x-[-110%]",
   ]
     .filter(Boolean)
     .join(" ");
 
-  const sidebarStyle = {
+  const sidebarStyle: React.CSSProperties = {
     width: `${width}px`,
     top: !isDocked ? `${SPACING}px` : "0",
     left: !isDocked ? `${SPACING}px` : "0",
@@ -122,11 +122,12 @@ export function Sidebar() {
           onMouseEnter={() => setIsVisible(true)}
         />
       )}
+      <div className="absolute left-0 top-0 h-full z-[200] bg-red-500 opacity-50 pointer-events-none" style={sidebarStyle} onMouseLeave={handleMouseLeave} />
       <aside
         ref={sidebarRef}
         className={sidebarClasses}
         style={sidebarStyle}
-        onMouseLeave={handleMouseLeave}
+
         onMouseEnter={handleMouseEnter}
       >
         <div className="flex flex-col h-full">
@@ -139,7 +140,7 @@ export function Sidebar() {
             onToggleVisibility={() => setIsVisible(false)}
           />
 
-          <nav className="flex-1 border-t pt-2 space-y-2">
+          <nav className="flex-1 pt-2 space-y-2">
             <NotebookList />
             <CatalogList />
           </nav>

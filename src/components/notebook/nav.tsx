@@ -63,8 +63,7 @@ function NewNotebookDialog({
 }
 
 export function NotebookList() {
-  const { notebooks, activeNotebook, setActiveNotebook, removeNotebook, isLoading } = useNotebook();
-  const [isOpen, setIsOpen] = useState(false);
+  const { notebooks, activeNotebook, setActiveNotebook, removeNotebook, createNotebook, isLoading } = useNotebook();
 
   if (isLoading) {
     return (
@@ -78,69 +77,61 @@ export function NotebookList() {
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col px-4">
+      <div className="text-sm text-muted-foreground flex items-center justify-between mb-4">
+        <div className="text-xs uppercase">Notebooks</div>
+        <Button size="icon" variant="ghost" className="size-6 cursor-pointer" onClick={() => createNotebook()}>
+          <BookPlusIcon className="size-4" />
+        </Button>
+      </div>
       {notebooks.length === 0 ? (
-        <div className="flex flex-col items-center h-full text-center px-4">
-          <div className="flex flex-col items-center justify-center w-full bg-gradient-to-br from-primary/15 to-secondary/10 rounded-xl p-4">
+        <div className="flex flex-col items-center h-full text-center">
+          <div className="flex flex-col items-center justify-center w-full bg-gradient-to-br from-primary/15 to-secondary/10 rounded p-4">
             <NotebookIcon className="size-10 text-muted-foreground my-4" />
             <h3 className="text-lg text-card-foreground font-medium mb-2">No notebooks</h3>
             <p className="text-sm text-muted-foreground mb-4">Create a notebook to get started</p>
-            <NewNotebookDialog isOpen={isOpen} setIsOpen={setIsOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  Create notebook
-                  <BookPlusIcon />
-                </Button>
-              </DialogTrigger>
-            </NewNotebookDialog>
+            <Button size="sm" onClick={() => createNotebook()}>
+              <BookPlusIcon className="size-4" />
+              Create notebook
+            </Button>
           </div>
         </div>
       ) : (
-        <div className="px-3">
-          <div className="text-sm text-muted-foreground flex items-center justify-between mb-2">
-            <div className="text-xs uppercase">Notebooks</div>
-            <NewNotebookDialog isOpen={isOpen} setIsOpen={setIsOpen}>
-              <DialogTrigger asChild>
-                <BookPlusIcon className="size-4 hover:text-foreground/80 my-2 cursor-pointer" />
-              </DialogTrigger>
-            </NewNotebookDialog>
-          </div>
-          <div className="space-y-1">
-            {notebooks.map(notebook => (
-              <button
-                key={notebook.id}
-                onClick={() => setActiveNotebook(notebook.id)}
-                className={`w-full flex items-center justify-between p-2 rounded-sm h-8 transition-colors hover:bg-accent cursor-pointer hover:text-accent-foreground ${activeNotebook?.id === notebook.id
-                  ? "bg-accent text-accent-foreground border font-semibold"
-                  : ""
-                  }`}
-              >
-                <span className="text-sm truncate">{notebook.name}</span>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      className="flex items-center justify-center text-muted-foreground size-5 hover:text-foreground p-0"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreVerticalIcon className="size-4" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem
-                      className=""
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeNotebook(notebook.id);
-                      }}
-                    >
-                      <Trash2Icon className="size-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </button>
-            ))}
-          </div>
+        <div className="space-y-1">
+          {notebooks.map(notebook => (
+            <button
+              key={notebook.id}
+              onClick={() => setActiveNotebook(notebook.id)}
+              className={`w-full flex items-center justify-between p-2 rounded h-8 transition-colors hover:bg-accent cursor-pointer hover:text-accent-foreground ${activeNotebook?.id === notebook.id
+                ? "bg-accent text-accent-foreground border font-semibold"
+                : ""
+                }`}
+            >
+              <span className="text-sm truncate">{notebook.name}</span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="flex items-center justify-center text-muted-foreground size-5 hover:text-foreground p-0 cursor-pointer"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MoreVerticalIcon className="size-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem
+                    className=""
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeNotebook(notebook.id);
+                    }}
+                  >
+                    <Trash2Icon className="size-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </button>
+          ))}
         </div>
       )}
     </div>

@@ -28,6 +28,7 @@ interface CatalogState {
   selectDataset: (id: string | null) => void;
   refreshDatasets: () => Promise<void>;
   getTableInfo: (tableName: string) => Promise<{ rowCount: number | bigint; size: number | bigint }>;
+  getTableSchema: (tableName: string) => Promise<Array<{ columnName: string; dataType: string; isNullable: string; columnDefault: string | null }>>;
 }
 
 export const useCatalogStore = create<CatalogState>((set, get) => ({
@@ -101,6 +102,37 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
     } catch (err) {
       console.error("Failed to get table info:", err);
       return { rowCount: 0, size: 0 };
+    }
+  },
+
+  getTableSchema: async (tableName: string) => {
+    const { conn } = useDuckDBStore.getState();
+    if (!conn) {
+      throw new Error("DuckDB is not initialized");
+    }
+
+    try {
+      const result = await conn.query(`
+        SELECT 
+          column_name,
+          data_type,
+          is_nullable,
+          column_default
+        FROM information_schema.columns 
+        WHERE table_schema = 'main' 
+        AND table_name = '${tableName}'
+        ORDER BY ordinal_position
+      `);
+
+      return result.toArray().map(row => ({
+        columnName: row.column_name as string,
+        dataType: row.data_type as string,
+        isNullable: row.is_nullable as string,
+        columnDefault: row.column_default as string | null,
+      }));
+    } catch (err) {
+      console.error("Failed to get table schema:", err);
+      return [];
     }
   },
 

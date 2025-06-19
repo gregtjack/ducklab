@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { db, NotebookRecord, CellRecord, DataSourceRecord } from "@/lib/db/notebook-db";
 import { deserialize } from "@/lib/arrow";
 // import { QueryResult } from "@/lib/duckdb/provider";
-import { useDuckDBStore, QueryResult } from "@/store/duckdb-store";
+import { QueryResult } from "@/store/duckdb-store";
 
 export interface DataSource {
   id: string;
@@ -34,7 +34,7 @@ export interface Notebook {
 interface NotebookContextType {
   notebooks: Notebook[];
   activeNotebook: Notebook | null;
-  createNotebook: (name: string) => Promise<void>;
+  createNotebook: (name?: string) => Promise<void>;
   removeNotebook: (id: string) => Promise<void>;
   setActiveNotebook: (id: string) => void;
   updateNotebook: (id: string, updates: Partial<Notebook>) => Promise<void>;
@@ -52,7 +52,6 @@ export function NotebookProvider({ children }: { children: React.ReactNode }) {
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [activeNotebookId, setActiveNotebookId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { reset } = useDuckDBStore();
 
   const activeNotebook = notebooks.find(n => n.id === activeNotebookId) || null;
 
@@ -100,7 +99,7 @@ export function NotebookProvider({ children }: { children: React.ReactNode }) {
     void loadNotebooks();
   }, []);
 
-  const createNotebook = useCallback(async (name: string) => {
+  const createNotebook = useCallback(async (name: string = "Untitled") => {
     const id = uuidv4();
     const now = new Date();
 
