@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useRef, memo } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useDuckDBStore } from "../../store/duckdb-store";
 import { QueryEditor } from "./query-editor";
 import { QueryResults } from "./query-results";
 import { Button } from "../ui/button";
 import { Loader2, Play, Trash2 } from "lucide-react";
-import { useNotebook } from "./notebook-context";
+import { useNotebookStore, useActiveNotebook } from "@/store/notebook-store";
 import { ResizablePanel, ResizableHandle, ResizablePanelGroup } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
 import { TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -71,8 +71,9 @@ const useResize = ({ initialHeight, onResize }: UseResizeProps) => {
   };
 };
 
-const NotebookCell = memo(({ cellId, index }: NotebookCellProps) => {
-  const { activeNotebook, updateCell, removeCell } = useNotebook();
+function NotebookCell({ cellId, index }: NotebookCellProps) {
+  const { updateCell, removeCell } = useNotebookStore();
+  const activeNotebook = useActiveNotebook();
   const { runQuery } = useDuckDBStore();
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,6 +96,7 @@ const NotebookCell = memo(({ cellId, index }: NotebookCellProps) => {
     try {
       const result = await runQuery(cell.query);
       await updateCell(activeNotebook.id, cellId, {
+        query: cell.query,
         results: result,
         error: null,
       });
@@ -139,14 +141,14 @@ const NotebookCell = memo(({ cellId, index }: NotebookCellProps) => {
         <div className="flex flex-col h-fit items-center gap-2 flex-shrink-0">
           <div className="text-sm text-muted-foreground font-mono">{index + 1}</div>
           <TooltipProvider delayDuration={700}>
-            <div className="inline-flex flex-col border -space-x-px rounded-sm bg-background shadow-xs rtl:space-x-reverse">
+            <div className="inline-flex flex-col -space-x-px rtl:space-x-reverse">
               <TooltipPrimitive.Root>
                 <TooltipTrigger asChild>
                   <Button
                     onClick={handleRunQuery}
                     disabled={isRunning}
                     variant="ghost"
-                    className="rounded-none size-8 shadow-none first:rounded-t-sm hover:bg-accent last:rounded-b-sm focus-visible:z-10"
+                    className="rounded-sm size-8 shadow-none hover:bg-primary/10 hover:text-primary focus-visible:z-10"
                   >
                     {isRunning ? (
                       <Loader2 className="size-3.5 animate-spin" />
@@ -155,16 +157,14 @@ const NotebookCell = memo(({ cellId, index }: NotebookCellProps) => {
                     )}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="left">
-                  Run Query <span className="text-xs font-mono ml-1 p-0.5">(Ctrl+Enter)</span>
-                </TooltipContent>
+                <TooltipContent side="left">Run Query</TooltipContent>
               </TooltipPrimitive.Root>
               <TooltipPrimitive.Root>
                 <TooltipTrigger asChild>
                   <Button
                     onClick={handleDeleteCell}
                     variant="ghost"
-                    className="rounded-none size-8 shadow-none hover:text-red-500 hover:bg-accent first:rounded-t-sm last:rounded-b-sm focus-visible:z-10"
+                    className="rounded-sm size-8 shadow-none hover:text-red-500 hover:bg-red-500/10 focus-visible:z-10"
                   >
                     <Trash2 className="size-3.5" />
                   </Button>
@@ -178,7 +178,7 @@ const NotebookCell = memo(({ cellId, index }: NotebookCellProps) => {
           <ResizablePanelGroup
             direction="vertical"
             className={cn(
-              "border rounded-sm shadow-md bg-card text-card-foreground h-full w-full overflow-hidden transition-colors",
+              "border rounded-sm shadow-sm bg-card text-card-foreground h-full w-full overflow-hidden transition-colors",
               isEditing ? "border-primary ring-2 ring-primary/25" : "",
             )}
             id={`cell-${cellId}`}
@@ -186,13 +186,15 @@ const NotebookCell = memo(({ cellId, index }: NotebookCellProps) => {
             <ResizablePanel
               id="editor"
               minSize={25}
-              defaultSize={100}
+              defaultSize={25}
               order={1}
               className="border-t"
             >
               <QueryEditor
                 initialQuery={cell.query}
-                onQueryChange={(query: string) => updateCell(activeNotebook.id, cellId, { query })}
+                onQueryChange={(query: string) => {
+                  void updateCell(activeNotebook.id, cellId, { query });
+                }}
                 onFocus={() => setIsEditing(true)}
                 onBlur={() => setIsEditing(false)}
               />
@@ -204,7 +206,7 @@ const NotebookCell = memo(({ cellId, index }: NotebookCellProps) => {
                   id="results"
                   className="border-t overflow-hidden"
                   minSize={25}
-                  defaultSize={200}
+                  defaultSize={75}
                   order={2}
                 >
                   <QueryResults
@@ -235,7 +237,7 @@ const NotebookCell = memo(({ cellId, index }: NotebookCellProps) => {
       )}
     </div>
   );
-});
+}
 
 NotebookCell.displayName = "NotebookCell";
 

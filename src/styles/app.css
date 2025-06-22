@@ -1,13 +1,13 @@
 @import "tailwindcss" source("../");
 @import "tw-animate-css";
 
-@import "@fontsource-variable/ibm-plex-sans";
+@import "@fontsource-variable/inter";
 @import "@fontsource-variable/jetbrains-mono";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: "IBM Plex Sans Variable", sans-serif;
+  --font-sans: "Inter Variable", sans-serif;
   --font-mono: "JetBrains Mono Variable", monospace;
 
   --radius-sm: calc(var(--radius) - 4px);
@@ -55,9 +55,9 @@
   --card-foreground: oklch(0.141 0.005 285.823);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.729 0.148 235.7);
+  --primary: oklch(0.56 0.213 259.36);
   --primary-foreground: oklch(0.982 0.000 89.9);
-  --secondary: oklch(0.802 0.212 129.5);
+  --secondary: oklch(0.96 0 none);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.91 0.001 286.375);
   --muted-foreground: oklch(0.552 0.016 285.938);
@@ -87,11 +87,11 @@
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.232 0.008 285.8);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.21 0.03 265);
+  --popover: oklch(0.232 0.008 285.8);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.534 0.239 267.9);
+  --primary: oklch(0.58 0.2008 261.44);
   --primary-foreground: oklch(0.944 0.026 271.9);
-  --secondary: oklch(0.757 0.148 85.8);
+  --secondary: oklch(0.29 0.01 286);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.2 0.01 286);
   --muted-foreground: oklch(0.705 0.015 286.067);

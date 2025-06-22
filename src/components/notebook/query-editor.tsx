@@ -6,7 +6,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useCatalogStore } from "@/store/catalog-store";
 import { languages } from "monaco-editor";
 
-
 interface QueryEditorProps {
   initialQuery: string;
   onQueryChange: (query: string) => void;
@@ -15,34 +14,27 @@ interface QueryEditorProps {
 }
 
 export function QueryEditor({ initialQuery, onQueryChange, onFocus, onBlur }: QueryEditorProps) {
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const monaco = useMonaco();
   const { datasets } = useCatalogStore();
   const [query, setQuery] = useState(initialQuery);
   const lastSyncedQueryRef = useRef(initialQuery);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Update local state when initialQuery changes from external sources
-  useEffect(() => {
-    // Only update if the initialQuery is different from what we last synced
-    // This prevents the input from going blank when running queries
-    if (initialQuery !== lastSyncedQueryRef.current) {
-      setQuery(initialQuery);
-      lastSyncedQueryRef.current = initialQuery;
-    }
-  }, [initialQuery]);
-
   // Debounced update to parent
-  const debouncedUpdate = useCallback((newQuery: string) => {
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
+  const debouncedUpdate = useCallback(
+    (newQuery: string) => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
 
-    debounceTimeoutRef.current = setTimeout(() => {
-      onQueryChange(newQuery);
-      lastSyncedQueryRef.current = newQuery;
-    }, 300); // 300ms debounce
-  }, [onQueryChange]);
+      debounceTimeoutRef.current = setTimeout(() => {
+        onQueryChange(newQuery);
+        lastSyncedQueryRef.current = newQuery;
+      }, 300); // 300ms debounce
+    },
+    [onQueryChange],
+  );
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -63,14 +55,14 @@ export function QueryEditor({ initialQuery, onQueryChange, onFocus, onBlur }: Qu
     if (!monaco) return;
 
     // Register completion provider for table names
-    const completionProvider = monaco.languages.registerCompletionItemProvider('sql', {
+    const completionProvider = monaco.languages.registerCompletionItemProvider("sql", {
       provideCompletionItems: (model, position) => {
         const suggestions: {
           label: string;
           kind: languages.CompletionItemKind;
           insertText: string;
           detail?: string;
-          documentation?: { value: string; };
+          documentation?: { value: string };
           sortText: string;
           range: {
             startLineNumber: number;
@@ -99,12 +91,12 @@ export function QueryEditor({ initialQuery, onQueryChange, onFocus, onBlur }: Qu
             documentation: {
               value: [
                 `**Table: ${dataset.tableName}**`,
-                '',
+                "",
                 `**Type:** ${dataset.fileType}`,
-                `**Rows:** ${dataset.rowCount ? dataset.rowCount.toString() : 'Unknown'}`,
-                `**Size:** ${dataset.size ? dataset.size.toString() : 'Unknown'}`,
-                dataset.isInsertable ? '**Insertable:** Yes' : '**Insertable:** No'
-              ].join('\n')
+                `**Rows:** ${dataset.rowCount ? dataset.rowCount.toString() : "Unknown"}`,
+                `**Size:** ${dataset.size ? dataset.size.toString() : "Unknown"}`,
+                dataset.isInsertable ? "**Insertable:** Yes" : "**Insertable:** No",
+              ].join("\n"),
             },
             sortText: `0_${dataset.tableName}`, // Ensure tables appear first
             range: range,
@@ -113,13 +105,47 @@ export function QueryEditor({ initialQuery, onQueryChange, onFocus, onBlur }: Qu
 
         // Add common SQL keywords
         const sqlKeywords = [
-          'SELECT', 'FROM', 'WHERE', 'GROUP BY', 'ORDER BY', 'HAVING',
-          'JOIN', 'LEFT JOIN', 'RIGHT JOIN', 'INNER JOIN', 'OUTER JOIN',
-          'INSERT INTO', 'UPDATE', 'DELETE FROM', 'CREATE TABLE', 'DROP TABLE',
-          'ALTER TABLE', 'INDEX', 'PRIMARY KEY', 'FOREIGN KEY',
-          'COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'DISTINCT',
-          'AND', 'OR', 'NOT', 'IN', 'LIKE', 'BETWEEN', 'IS NULL', 'IS NOT NULL',
-          'ASC', 'DESC', 'LIMIT', 'OFFSET', 'AS', 'ON', 'USING'
+          "SELECT",
+          "FROM",
+          "WHERE",
+          "GROUP BY",
+          "ORDER BY",
+          "HAVING",
+          "JOIN",
+          "LEFT JOIN",
+          "RIGHT JOIN",
+          "INNER JOIN",
+          "OUTER JOIN",
+          "INSERT INTO",
+          "UPDATE",
+          "DELETE FROM",
+          "CREATE TABLE",
+          "DROP TABLE",
+          "ALTER TABLE",
+          "INDEX",
+          "PRIMARY KEY",
+          "FOREIGN KEY",
+          "COUNT",
+          "SUM",
+          "AVG",
+          "MIN",
+          "MAX",
+          "DISTINCT",
+          "AND",
+          "OR",
+          "NOT",
+          "IN",
+          "LIKE",
+          "BETWEEN",
+          "IS NULL",
+          "IS NOT NULL",
+          "ASC",
+          "DESC",
+          "LIMIT",
+          "OFFSET",
+          "AS",
+          "ON",
+          "USING",
         ];
 
         sqlKeywords.forEach(keyword => {
@@ -133,13 +159,13 @@ export function QueryEditor({ initialQuery, onQueryChange, onFocus, onBlur }: Qu
         });
 
         return {
-          suggestions: suggestions
+          suggestions: suggestions,
         };
-      }
+      },
     });
 
     // Register hover provider for table information
-    const hoverProvider = monaco.languages.registerHoverProvider('sql', {
+    const hoverProvider = monaco.languages.registerHoverProvider("sql", {
       provideHover: (model, position) => {
         const word = model.getWordAtPosition(position);
         if (!word) return;
@@ -152,16 +178,16 @@ export function QueryEditor({ initialQuery, onQueryChange, onFocus, onBlur }: Qu
             {
               value: [
                 `**${dataset.tableName}**`,
-                '',
+                "",
                 `**Type:** ${dataset.fileType}`,
-                `**Rows:** ${dataset.rowCount ? dataset.rowCount.toString() : 'Unknown'}`,
-                `**Size:** ${dataset.size ? dataset.size.toString() : 'Unknown'}`,
-                dataset.isInsertable ? '**Insertable:** Yes' : '**Insertable:** No'
-              ].join('\n')
-            }
-          ]
+                `**Rows:** ${dataset.rowCount ? dataset.rowCount.toString() : "Unknown"}`,
+                `**Size:** ${dataset.size ? dataset.size.toString() : "Unknown"}`,
+                dataset.isInsertable ? "**Insertable:** Yes" : "**Insertable:** No",
+              ].join("\n"),
+            },
+          ],
         };
-      }
+      },
     });
 
     return () => {
@@ -175,22 +201,16 @@ export function QueryEditor({ initialQuery, onQueryChange, onFocus, onBlur }: Qu
       <Editor
         height="100%"
         width="100%"
-        theme={theme === "dark" ? "vs-dark" : "light"}
+        theme={resolvedTheme === "dark" ? "vs-dark" : "light"}
         language="sql"
         value={query}
         onChange={handleChange}
-        onMount={(editor) => {
+        onMount={editor => {
           editor.onDidFocusEditorWidget(() => {
             onFocus?.();
           });
           editor.onDidBlurEditorWidget(() => {
             onBlur?.();
-            // Immediately sync on blur to ensure no pending changes are lost
-            if (debounceTimeoutRef.current) {
-              clearTimeout(debounceTimeoutRef.current);
-              onQueryChange(query);
-              lastSyncedQueryRef.current = query;
-            }
           });
         }}
         options={{
@@ -211,16 +231,7 @@ export function QueryEditor({ initialQuery, onQueryChange, onFocus, onBlur }: Qu
             showEnums: true,
             showModules: true,
             showProperties: true,
-            showEvents: true,
-            showOperators: true,
-            showUnits: true,
             showValues: true,
-            showColors: true,
-            showFiles: true,
-            showReferences: true,
-            showFolders: true,
-            showTypeParameters: true,
-            showWords: true,
           },
         }}
       />

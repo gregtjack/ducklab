@@ -12,7 +12,6 @@ export interface CellRecord {
   index: number;
   notebookId: string;
   query: string;
-  results: string | null; // Serialized Arrow Table
   error: string | null;
   isLoading: boolean;
   createdAt: Date;
@@ -37,9 +36,9 @@ export class NotebookDatabase extends Dexie {
 
   constructor() {
     super("NotebookDB");
-    this.version(1).stores({
+    this.version(2).stores({
       notebooks: "id, name, createdAt, updatedAt",
-      cells: "id, notebookId, createdAt, updatedAt",
+      cells: "id, notebookId, index, query, error, isLoading, createdAt, updatedAt",
       dataSources: "id, notebookId, createdAt, updatedAt",
     });
   }

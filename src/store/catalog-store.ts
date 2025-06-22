@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { useDuckDBStore } from "./duckdb-store";
+import { nanoid } from "nanoid";
 
 export interface Dataset {
   id: string;
@@ -20,15 +21,30 @@ interface CatalogState {
   isLoading: boolean;
   error: Error | null;
   selectedDataset: Dataset | null;
+  autoSyncInterval: number | null;
+  isAutoSyncEnabled: boolean;
 
   // Actions
   addDataset: (dataset: Omit<Dataset, "id" | "createdAt">) => Promise<void>;
   removeDataset: (id: string) => Promise<void>;
   updateDataset: (id: string, updates: Partial<Dataset>) => Promise<void>;
   selectDataset: (id: string | null) => void;
-  refreshDatasets: () => Promise<void>;
-  getTableInfo: (tableName: string) => Promise<{ rowCount: number | bigint; size: number | bigint }>;
-  getTableSchema: (tableName: string) => Promise<Array<{ columnName: string; dataType: string; isNullable: string; columnDefault: string | null }>>;
+  sync: () => Promise<void>;
+  refreshDatasets: () => void;
+  startAutoSync: (intervalMs?: number) => void;
+  stopAutoSync: () => void;
+  waitForDuckDB: () => Promise<void>;
+  getTableInfo: (
+    tableName: string,
+  ) => Promise<{ rowCount: number | bigint; size: number | bigint }>;
+  getTableSchema: (tableName: string) => Promise<
+    {
+      columnName: string;
+      dataType: string;
+      isNullable: string;
+      columnDefault: string | null;
+    }[]
+  >;
 }
 
 export const useCatalogStore = create<CatalogState>((set, get) => ({
@@ -36,8 +52,44 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
   isLoading: false,
   error: null,
   selectedDataset: null,
+  autoSyncInterval: null,
+  isAutoSyncEnabled: false,
 
-  addDataset: async (dataset) => {
+  waitForDuckDB: async () => {
+    const { isDuckDBReady } = useDuckDBStore.getState();
+
+    // If already ready, return immediately
+    if (isDuckDBReady()) {
+      return;
+    }
+
+    console.log("Waiting for DuckDB to be ready...");
+
+    // Wait for DuckDB to be ready with a timeout
+    return new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        console.error("Timeout waiting for DuckDB to be ready");
+        reject(new Error("Timeout waiting for DuckDB to be ready"));
+      }, 30000); // 30 second timeout
+
+      const checkReady = () => {
+        if (isDuckDBReady()) {
+          console.log("DuckDB is now ready");
+          clearTimeout(timeout);
+          resolve();
+        } else {
+          // Check again in 100ms
+          setTimeout(checkReady, 100);
+        }
+      };
+
+      checkReady();
+    });
+  },
+
+  addDataset: async dataset => {
+    await get().waitForDuckDB();
+
     const { db } = useDuckDBStore.getState();
     if (!db) {
       throw new Error("DuckDB is not initialized");
@@ -50,28 +102,36 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
       isInsertable: false,
     };
 
-    set((state) => ({
+    set(state => ({
       datasets: [...state.datasets, newDataset],
     }));
   },
 
-  removeDataset: async (id) => {
-    const { db } = useDuckDBStore.getState();
+  removeDataset: async id => {
+    await get().waitForDuckDB();
+
+    const { db, runQuery } = useDuckDBStore.getState();
     if (!db) {
       throw new Error("DuckDB is not initialized");
     }
 
-    set((state) => ({
-      datasets: state.datasets.filter((d) => d.id !== id),
+    const tableName = get().datasets.find(d => d.id === id)?.tableName;
+
+    if (!tableName) {
+      throw new Error("Table not found");
+    }
+
+    await runQuery(`DROP TABLE IF EXISTS "${tableName}"`);
+
+    set(state => ({
+      datasets: state.datasets.filter(d => d.id !== id),
       selectedDataset: state.selectedDataset?.id === id ? null : state.selectedDataset,
     }));
   },
 
   updateDataset: async (id, updates) => {
-    set((state) => ({
-      datasets: state.datasets.map((d) =>
-        d.id === id ? { ...d, ...updates } : d
-      ),
+    set(state => ({
+      datasets: state.datasets.map(d => (d.id === id ? { ...d, ...updates } : d)),
       selectedDataset:
         state.selectedDataset?.id === id
           ? { ...state.selectedDataset, ...updates }
@@ -79,15 +139,15 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
     }));
   },
 
-  selectDataset: (id) => {
-    set((state) => ({
-      selectedDataset: id
-        ? state.datasets.find((d) => d.id === id) || null
-        : null,
+  selectDataset: id => {
+    set(state => ({
+      selectedDataset: id ? state.datasets.find(d => d.id === id) || null : null,
     }));
   },
 
   getTableInfo: async (tableName: string) => {
+    await get().waitForDuckDB();
+
     const { conn } = useDuckDBStore.getState();
     if (!conn) {
       throw new Error("DuckDB is not initialized");
@@ -106,6 +166,8 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
   },
 
   getTableSchema: async (tableName: string) => {
+    await get().waitForDuckDB();
+
     const { conn } = useDuckDBStore.getState();
     if (!conn) {
       throw new Error("DuckDB is not initialized");
@@ -136,16 +198,15 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
     }
   },
 
-  refreshDatasets: async () => {
-    const { db, conn } = useDuckDBStore.getState();
-    if (!db || !conn) {
+  sync: async () => {
+    await get().waitForDuckDB();
+
+    const { conn } = useDuckDBStore.getState();
+    if (!conn) {
       throw new Error("DuckDB is not initialized");
     }
 
-    set({ isLoading: true, error: null });
-
     try {
-      // Query DuckDB's information schema to get all tables
       const result = await conn.query(`
         SELECT 
           table_name,
@@ -156,33 +217,95 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
         ORDER BY table_name
       `);
 
-      // Transform the results into Dataset objects
-      const datasets = await Promise.all(
-        result.toArray().map(async (row) => {
+      const newDatasets = await Promise.all(
+        result.toArray().map(async row => {
           const tableName = row.table_name as string;
           const { rowCount, size } = await get().getTableInfo(tableName);
 
           return {
-            id: crypto.randomUUID(), // Generate new IDs for existing tables
+            id: nanoid(),
             name: tableName,
             tableName: tableName,
             fileType: row.table_type as string,
             size,
             rowCount,
-            createdAt: new Date(), // Creation time is not available in information_schema
-            lastAccessed: undefined, // Last accessed time is not available in information_schema
-            isInsertable: row.is_insertable_into === 'YES'
+            createdAt: new Date(),
+            lastAccessed: undefined,
+            isInsertable: row.is_insertable_into === "YES",
           };
-        })
+        }),
       );
 
-      set({ datasets, error: null });
+      const currentDatasets = get().datasets;
+      const hasChanges =
+        newDatasets.length !== currentDatasets.length ||
+        newDatasets.some(
+          newDs =>
+            !currentDatasets.find(
+              currentDs =>
+                currentDs.tableName === newDs.tableName &&
+                currentDs.fileType === newDs.fileType &&
+                currentDs.size === newDs.size &&
+                currentDs.rowCount === newDs.rowCount &&
+                currentDs.isInsertable === newDs.isInsertable,
+            ),
+        );
+
+      if (hasChanges) {
+        set({ datasets: newDatasets, error: null });
+      }
     } catch (err) {
-      set({
-        error: err instanceof Error ? err : new Error("Failed to refresh datasets"),
-      });
-    } finally {
-      set({ isLoading: false });
+      throw new Error("Failed to fetch tables", { cause: err });
     }
+  },
+
+  refreshDatasets: () => {
+    set({ isLoading: true, error: null });
+    get()
+      .sync()
+      .then(() => {
+        set({ isLoading: false });
+      })
+      .catch(err => {
+        set({
+          isLoading: false,
+          error:
+            err instanceof Error ? err : new Error("Failed to refresh datasets", { cause: err }),
+        });
+      });
+  },
+
+  startAutoSync: (intervalMs = 5000) => {
+    const { stopAutoSync } = get();
+
+    // Stop any existing auto-sync
+    stopAutoSync();
+
+    // Start new auto-sync interval
+    const interval = window.setInterval(() => {
+      const { isDuckDBReady } = useDuckDBStore.getState();
+      const { sync } = get();
+      if (isDuckDBReady()) {
+        sync().catch(err => {
+          console.error("Catalog auto-sync failed:", err);
+        });
+      }
+    }, intervalMs);
+
+    set({
+      autoSyncInterval: interval,
+      isAutoSyncEnabled: true,
+    });
+  },
+
+  stopAutoSync: () => {
+    const { autoSyncInterval } = get();
+    if (autoSyncInterval) {
+      clearInterval(autoSyncInterval);
+    }
+    set({
+      autoSyncInterval: null,
+      isAutoSyncEnabled: false,
+    });
   },
 }));

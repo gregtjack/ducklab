@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import * as duckdb from "@duckdb/duckdb-wasm";
-import { getDB, cleanupDB, DuckDBError } from "../lib/duckdb";
+import { getDuckDB, cleanupDuckDB } from "../lib/duckdb";
+import { DuckDBError } from "@/lib/types/duckdb";
 import * as arrow from "apache-arrow";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,6 +38,7 @@ interface DuckDBState {
   memoryUsage: number | null;
   initialize: () => Promise<void>;
   updateMemoryUsage: () => Promise<void>;
+  isDuckDBReady: () => boolean;
   runQuery: <T extends arrow.TypeMap>(query: string, timeoutMs?: number) => Promise<QueryResult<T>>;
   registerFile: (name: string, file: File) => Promise<void>;
   registerURL: (name: string, url: string) => Promise<void>;
@@ -61,7 +63,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
 
   initialize: async () => {
     try {
-      const database = await getDB();
+      const database = await getDuckDB();
       const connection = await database.connect();
 
       set({ db: database, conn: connection, error: null });
@@ -92,11 +94,16 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
     }
   },
 
+  isDuckDBReady: () => {
+    const { db, conn, isLoading } = get();
+    return !isLoading && db !== null && conn !== null;
+  },
+
   runQuery: async <T extends arrow.TypeMap>(
     query: string,
     timeoutMs: number = 30000,
   ): Promise<QueryResult<T>> => {
-    const { db, conn, updateMemoryUsage } = get();
+    const { db, conn } = get();
 
     if (!db || !conn) {
       throw new DuckDBError("DuckDB is not initialized.");
@@ -119,7 +126,6 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
       const queryDuration = end - start;
 
       set({ error: null });
-      await updateMemoryUsage();
 
       return {
         query,
@@ -175,13 +181,20 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
       const fileName = `${options.format}_${Date.now()}_${file.name}`;
 
       // Register the file
-      await db.registerFileHandle(fileName, file, duckdb.DuckDBDataProtocol.BROWSER_FILEREADER, true);
+      await db.registerFileHandle(
+        fileName,
+        file,
+        duckdb.DuckDBDataProtocol.BROWSER_FILEREADER,
+        true,
+      );
 
       // Import based on format
       await get().importFromRegisteredFile(fileName, options);
       await get().updateMemoryUsage();
     } catch (err) {
-      throw new DuckDBError(err instanceof Error ? err.message : `Failed to import ${options.format} file`);
+      throw new DuckDBError(
+        err instanceof Error ? err.message : `Failed to import ${options.format} file`,
+      );
     }
   },
 
@@ -201,7 +214,9 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
       await get().importFromRegisteredFile(fileName, options);
       await get().updateMemoryUsage();
     } catch (err) {
-      throw new DuckDBError(err instanceof Error ? err.message : `Failed to import ${options.format} from URL`);
+      throw new DuckDBError(
+        err instanceof Error ? err.message : `Failed to import ${options.format} from URL`,
+      );
     }
   },
 
@@ -237,12 +252,12 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
     }
 
     await conn.insertCSVFromPath(fileName, {
-      schema: 'main',
+      schema: "main",
       name: options.tableName,
       delimiter: options.delimiter,
       header: options.header,
       detect: options.autoDetect,
-      dateFormat: 'auto',
+      dateFormat: "auto",
     });
   },
 
@@ -252,7 +267,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
       jsonOptions.push(`format='${options.jsonFormat}'`);
     }
 
-    const optionsString = jsonOptions.length > 0 ? `(${jsonOptions.join(', ')})` : '';
+    const optionsString = jsonOptions.length > 0 ? `(${jsonOptions.join(", ")})` : "";
 
     return `
       CREATE TABLE ${options.tableName} AS 
@@ -310,7 +325,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
       delete (window as any).__duckdb_memory_interval;
     }
 
-    await cleanupDB().catch(console.error);
+    await cleanupDuckDB().catch(console.error);
     set({
       db: null,
       conn: null,

@@ -14,13 +14,12 @@
       {
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            # Node.js and Bun
             nodejs_22
             bun
           ];
 
           shellHook = ''
-            echo "🚀 Welcome to DuckLab development environment!"
+            echo "🚀 Welcome to DuckLab development environment"
             echo "📦 Node.js version: $(node --version)"
             echo "🐰 Bun version: $(bun --version)"
             echo "📝 TypeScript version: $(tsc --version)"

@@ -1,6 +1,6 @@
 import { useDuckDBStore } from "@/store/duckdb-store";
 import { Button } from "./ui/button";
-import { RefreshCcw, Info, DatabaseZap } from "lucide-react";
+import { Info, DatabaseZap } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -9,20 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "./ui/dialog";
-
-function formatBytes(bytes: number | bigint, decimals = 2) {
-  if (typeof bytes === "bigint") {
-    bytes = Number(bytes);
-  }
-  if (!+bytes) return "0 Bytes";
-
-  const k = 1024;
-  const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ["Bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"];
-
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
-}
+import prettyBytes from "pretty-bytes";
 
 export function DuckDBStatus() {
   const { isLoading, error, errorHistory, memoryUsage, reset } = useDuckDBStore();
@@ -30,38 +17,11 @@ export function DuckDBStatus() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <div className="flex flex-col gap-1 p-2 rounded hover:bg-accent cursor-pointer">
-          <div className="flex items-center gap-2 text-xs">
-            <DatabaseZap className="size-4" />
-            <span className="font-medium text-xs">DuckDB Status</span>
-            {isLoading && <span className="text-yellow-500">Initializing...</span>}
-            {error && (
-              <div className="flex items-center gap-1 justify-between w-full">
-                <div className="flex items-center gap-1 text-red-500">
-                  <div className="size-2 rounded-full bg-red-500" />
-                  <span>Error</span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  title="Reset DuckDB"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    reset();
-                  }}
-                  className="size-4"
-                >
-                  <RefreshCcw className="size-4" />
-                </Button>
-              </div>
-            )}
-            {!isLoading && !error && (
-              <div className="flex items-center gap-1 text-green-500">
-                <div className="size-2 rounded-full bg-green-500" />
-              </div>
-            )}
-          </div>
-        </div>
+        <Button variant="ghost" className="w-full justify-start gap-2">
+          <DatabaseZap />
+          <span className="text-sm">DuckDB</span>
+          {isLoading && <span className="text-yellow-500">Initializing...</span>}
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -86,7 +46,7 @@ export function DuckDBStatus() {
           <div className="space-y-2">
             <h4 className="text-sm font-medium text-muted-foreground">Memory Usage</h4>
             <p className="text-sm font-mono">
-              {memoryUsage !== null ? formatBytes(memoryUsage) : "Unknown"}
+              {memoryUsage !== null ? prettyBytes(Number(memoryUsage)) : "Unknown"}
             </p>
           </div>
           {error && (

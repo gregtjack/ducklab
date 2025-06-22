@@ -9,20 +9,19 @@ import { Switch } from "./ui/switch";
 import { Progress } from "./ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { toast } from "sonner";
-import { Upload, FileText, Link, Loader2 } from "lucide-react";
+import { Upload, Loader2, ImportIcon } from "lucide-react";
 import { useDuckDBStore, ImportOptions, FileFormat } from "@/store/duckdb-store";
 import { useCatalogStore } from "@/store/catalog-store";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "./ui/dialog";
 
-interface FileUploadProps {
-  children: React.ReactNode;
-}
+type FileUploadProps = React.PropsWithChildren;
 
 const FILE_FORMATS: { value: FileFormat; label: string; extensions: string[] }[] = [
   { value: "csv", label: "CSV", extensions: [".csv"] },
@@ -37,6 +36,28 @@ const JSON_FORMATS = [
   { value: "records", label: "Records" },
 ];
 
+const inferTableName = (fileName: string): string => {
+  // Remove file extension
+  const nameWithoutExt = fileName.replace(/\.[^/.]+$/, "");
+
+  let tableName = nameWithoutExt
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "");
+
+  if (tableName && !/^[a-z]/.test(tableName)) {
+    tableName = "table_" + tableName;
+  }
+
+  // Fallback if empty
+  if (!tableName) {
+    tableName = "imported_data";
+  }
+
+  return tableName;
+};
+
 export function FileUpload({ children }: FileUploadProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -45,14 +66,18 @@ export function FileUpload({ children }: FileUploadProps) {
   const [selectedFormat, setSelectedFormat] = useState<FileFormat>("csv");
   const [url, setUrl] = useState("");
 
-  // CSV options
-  const [delimiter, setDelimiter] = useState(",");
-  const [hasHeader, setHasHeader] = useState(true);
-  const [autoDetect, setAutoDetect] = useState(true);
-  const [sampleSize, setSampleSize] = useState(1000);
+  // File import options
+  const [importOptions, setImportOptions] = useState<ImportOptions>({
+    delimiter: ",",
+    tableName: "default",
+    format: "csv",
+    sampleSize: 1000,
+    header: true,
+    autoDetect: true,
+    jsonFormat: "auto",
+  });
 
-  // JSON options
-  const [jsonFormat, setJsonFormat] = useState<"auto" | "newline_delimited" | "records">("auto");
+  const [file, setFile] = useState<File | null>(null);
 
   const { importFile, importFromURL } = useDuckDBStore();
   const { refreshDatasets } = useCatalogStore();
@@ -62,25 +87,45 @@ export function FileUpload({ children }: FileUploadProps) {
     return format ? format.extensions : [];
   };
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    if (acceptedFiles.length === 0) return;
+  const getImportOptions = () => {
+    return {
+      tableName: tableName.trim(),
+      format: selectedFormat,
+      delimiter: importOptions.delimiter,
+      header: importOptions.header,
+      autoDetect: importOptions.autoDetect,
+      sampleSize: importOptions.sampleSize,
+    };
+  };
 
-    const file = acceptedFiles[0];
-    const fileExtension = file.name.toLowerCase();
-    const format = FILE_FORMATS.find(f =>
-      f.extensions.some(ext => fileExtension.endsWith(ext))
-    );
+  const onDrop = useCallback(
+    async (acceptedFiles: File[]) => {
+      if (acceptedFiles.length === 0) return;
+      const file = acceptedFiles[0];
+      setFile(file);
+      const fileName = file.name.toLowerCase();
+      const format = FILE_FORMATS.find(f => f.extensions.some(ext => fileName.endsWith(ext)));
+      setSelectedFormat(format?.value || "csv");
+      setTableName(inferTableName(file.name));
+    },
+    [setFile, setTableName],
+  );
 
-    if (!format) {
-      toast.error(`Please select a ${selectedFormat.toUpperCase()} file`);
-      return;
-    }
-
+  const handleSubmit = async () => {
     if (!tableName.trim()) {
       toast.error("Please enter a table name");
       return;
     }
 
+    if (!file && !url.trim()) {
+      toast.error("Please select a file or enter a URL");
+      return;
+    }
+
+    await performImport();
+  };
+
+  const performImport = async () => {
     setIsUploading(true);
     setUploadProgress(0);
 
@@ -96,241 +141,154 @@ export function FileUpload({ children }: FileUploadProps) {
         });
       }, 100);
 
-      const options: ImportOptions = {
-        tableName: tableName.trim(),
-        format: selectedFormat,
-        // CSV specific options
-        delimiter,
-        header: hasHeader,
-        autoDetect,
-        sampleSize,
-        // JSON specific options
-        jsonFormat,
-      };
+      const options: ImportOptions = getImportOptions();
 
-      await importFile(file, options);
+      if (file) {
+        await importFile(file, options);
+      } else {
+        await importFromURL(url.trim(), options);
+      }
+
+      toast.success(
+        <span>
+          Successfully imported file as table <span className="font-mono">{tableName}</span>
+        </span>,
+      );
 
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      toast.success(`Successfully imported ${file.name} as table '${tableName}'`);
-
       // Refresh the catalog to show the new table
-      await refreshDatasets();
+      refreshDatasets();
 
       // Reset form
       resetForm();
       setIsOpen(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to import file");
+      const errorMessage = file ? "Failed to import file" : "Failed to import from URL";
+      toast.error(error instanceof Error ? error.message : errorMessage);
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
     }
-  }, [tableName, selectedFormat, delimiter, hasHeader, autoDetect, sampleSize, jsonFormat, importFile, refreshDatasets]);
+  };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'text/csv': ['.csv'],
-      'application/csv': ['.csv'],
-      'application/json': ['.json'],
-      'application/octet-stream': ['.parquet', '.pq', '.arrow', '.feather'],
+      "text/csv": [".csv"],
+      "application/csv": [".csv"],
+      "application/json": [".json"],
+      "application/octet-stream": [".parquet", ".pq", ".arrow", ".feather"],
     },
     multiple: false,
     disabled: isUploading,
   });
 
-  const handleURLImport = async () => {
-    if (!url.trim()) {
-      toast.error("Please enter a URL");
-      return;
-    }
-
-    if (!tableName.trim()) {
-      toast.error("Please enter a table name");
-      return;
-    }
-
-    setIsUploading(true);
-    setUploadProgress(0);
-
-    try {
-      // Simulate progress
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + 10;
-        });
-      }, 100);
-
-      const options: ImportOptions = {
-        tableName: tableName.trim(),
-        format: selectedFormat,
-        // CSV specific options
-        delimiter,
-        header: hasHeader,
-        autoDetect,
-        sampleSize,
-        // JSON specific options
-        jsonFormat,
-        // Parquet specific options
-      };
-
-      await importFromURL(url.trim(), options);
-
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-
-      toast.success(`Successfully imported ${selectedFormat.toUpperCase()} from URL as table '${tableName}'`);
-
-      // Refresh the catalog to show the new table
-      await refreshDatasets();
-
-      // Reset form
-      resetForm();
-      setIsOpen(false);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to import from URL");
-    } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
-    }
-  };
-
   const resetForm = () => {
     setTableName("");
     setSelectedFormat("csv");
     setUrl("");
-    setDelimiter(",");
-    setHasHeader(true);
-    setAutoDetect(true);
-    setSampleSize(1000);
-    setJsonFormat("auto");
-  };
-
-  const renderFormatOptions = () => {
-    switch (selectedFormat) {
-      case "csv":
-        return (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="delimiter">Delimiter</Label>
-                <Input
-                  id="delimiter"
-                  value={delimiter}
-                  onChange={(e) => setDelimiter(e.target.value)}
-                  placeholder=","
-                  disabled={isUploading}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="sampleSize">Sample Size</Label>
-                <Input
-                  id="sampleSize"
-                  type="number"
-                  value={sampleSize}
-                  onChange={(e) => setSampleSize(Number(e.target.value))}
-                  disabled={isUploading}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="hasHeader"
-                checked={hasHeader}
-                onCheckedChange={setHasHeader}
-                disabled={isUploading}
-              />
-              <Label htmlFor="hasHeader">Has header row</Label>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="autoDetect"
-                checked={autoDetect}
-                onCheckedChange={setAutoDetect}
-                disabled={isUploading}
-              />
-              <Label htmlFor="autoDetect">Auto-detect data types</Label>
-            </div>
-          </div>
-        );
-
-      case "json":
-        return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="jsonFormat">JSON Format</Label>
-              <Select value={jsonFormat} onValueChange={(value: "auto" | "newline_delimited" | "records") => setJsonFormat(value)} disabled={isUploading}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {JSON_FORMATS.map(format => (
-                    <SelectItem key={format.value} value={format.value}>
-                      {format.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        );
-
-      case "parquet":
-        return null;
-
-      case "arrow":
-        return (
-          <div className="space-y-4">
-            <div className="text-sm text-muted-foreground">
-              Arrow files will be imported using default settings.
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
-    }
+    setFile(null);
+    setImportOptions({
+      delimiter: ",",
+      tableName: "default",
+      format: "csv",
+      sampleSize: 1000,
+      header: true,
+    });
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+      <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="size-4" />
-            Import File
-          </DialogTitle>
+          <DialogTitle className="flex items-center gap-2">Create a table</DialogTitle>
+          <DialogDescription>
+            Import a file from your computer or via URL to create a new table in DuckDB.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* File upload */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium">Open file</h4>
+            <div
+              {...getRootProps()}
+              className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+                isDragActive
+                  ? "border-primary bg-primary/5"
+                  : "border-muted-foreground/25 hover:border-primary/50"
+              } ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              <input {...getInputProps()} />
+              <Upload className="mx-auto size-8 text-muted-foreground mb-2" />
+              {file ? (
+                <p className="text-sm">{file.name}</p>
+              ) : isDragActive ? (
+                <p className="text-sm">Drop the {selectedFormat.toUpperCase()} file here...</p>
+              ) : (
+                <div>
+                  <p className="text-sm font-medium mb-1">
+                    Drag and drop any {FILE_FORMATS.map(f => f.label).join(", ")} file here
+                  </p>
+                  <p className="text-xs text-muted-foreground">or click to browse</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Supported: {getAcceptedFileTypes().join(", ")}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+          {/* URL Import */}
+          <div className="space-y-4">
+            <h4 className="flex justify-center items-center gap-2 text-sm font-medium">
+              Or import from URL
+            </h4>
+
+            <div className="flex gap-2">
+              <Input
+                value={url}
+                onChange={e => setUrl(e.target.value)}
+                placeholder={`https://example.com/data.${selectedFormat}`}
+                disabled={isUploading}
+              />
+            </div>
+          </div>
           {/* Table Name */}
           <div className="space-y-2">
             <Label htmlFor="tableName">Table Name</Label>
-            <Input
-              id="tableName"
-              value={tableName}
-              onChange={(e) => setTableName(e.target.value)}
-              placeholder="Enter table name"
-              disabled={isUploading}
-            />
+            <div className="relative">
+              <Input
+                id="tableName"
+                value={tableName}
+                onChange={e => setTableName(e.target.value)}
+                placeholder="Enter table name"
+                disabled={isUploading}
+                className={file && tableName === inferTableName(file.name) ? "pr-20" : ""}
+              />
+              {file && tableName === inferTableName(file.name) && (
+                <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                  <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                    Auto-generated
+                  </span>
+                </div>
+              )}
+            </div>
+            {file && (
+              <p className="text-xs text-muted-foreground">
+                Table name inferred from "{file.name}". You can modify it if needed.
+              </p>
+            )}
           </div>
-
-          {/* File Format Selection */}
           <div className="space-y-2">
             <Label htmlFor="format">File Format</Label>
-            <Select value={selectedFormat} onValueChange={(value: FileFormat) => setSelectedFormat(value)} disabled={isUploading}>
+            <Select
+              value={selectedFormat}
+              onValueChange={(value: FileFormat) => setSelectedFormat(value)}
+              disabled={isUploading}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -343,64 +301,21 @@ export function FileUpload({ children }: FileUploadProps) {
               </SelectContent>
             </Select>
           </div>
-
-          {/* Format-specific Import Options */}
+          {/* Format-specific import options */}
           <div className="space-y-4">
-            <h4 className="text-sm font-medium">Import Options</h4>
-            {renderFormatOptions()}
+            <h4 className="text-sm font-medium">Import options</h4>
+            <FileOptions
+              selectedFormat={selectedFormat}
+              options={importOptions}
+              setOptions={setImportOptions}
+              isUploading={isUploading}
+            />
           </div>
 
-          {/* File Upload */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium">Upload File</h4>
-
-            <div
-              {...getRootProps()}
-              className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${isDragActive
-                ? "border-primary bg-primary/5"
-                : "border-muted-foreground/25 hover:border-primary/50"
-                } ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              <input {...getInputProps()} />
-              <Upload className="mx-auto size-8 text-muted-foreground mb-2" />
-              {isDragActive ? (
-                <p className="text-sm">Drop the {selectedFormat.toUpperCase()} file here...</p>
-              ) : (
-                <div>
-                  <p className="text-sm font-medium mb-1">Drop a {selectedFormat.toUpperCase()} file here</p>
-                  <p className="text-xs text-muted-foreground">or click to browse</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Supported: {getAcceptedFileTypes().join(", ")}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* URL Import */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium">Or Import from URL</h4>
-
-            <div className="flex gap-2">
-              <Input
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder={`https://example.com/data.${selectedFormat}`}
-                disabled={isUploading}
-              />
-              <Button
-                onClick={handleURLImport}
-                disabled={isUploading || !url.trim() || !tableName.trim()}
-                size="sm"
-              >
-                {isUploading ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Link className="size-4" />
-                )}
-              </Button>
-            </div>
-          </div>
+          <Button onClick={handleSubmit} disabled={isUploading} className="w-full">
+            Import
+            {isUploading ? <Loader2 className="animate-spin" /> : <ImportIcon />}
+          </Button>
 
           {/* Progress */}
           {isUploading && (
@@ -416,4 +331,109 @@ export function FileUpload({ children }: FileUploadProps) {
       </DialogContent>
     </Dialog>
   );
-} 
+}
+
+function FileOptions({
+  selectedFormat,
+  options,
+  setOptions,
+  isUploading,
+}: {
+  selectedFormat: FileFormat;
+  options: ImportOptions;
+  setOptions: (options: ImportOptions) => void;
+  isUploading: boolean;
+}) {
+  switch (selectedFormat) {
+    case "csv":
+      return (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="delimiter">Delimiter</Label>
+              <Input
+                id="delimiter"
+                value={options.delimiter}
+                onChange={e => setOptions({ ...options, delimiter: e.target.value })}
+                placeholder=","
+                disabled={isUploading}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sampleSize">Sample Size</Label>
+              <Input
+                id="sampleSize"
+                type="number"
+                value={options.sampleSize}
+                onChange={e => setOptions({ ...options, sampleSize: Number(e.target.value) })}
+                disabled={isUploading}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="hasHeader"
+              checked={options.header}
+              onCheckedChange={() => setOptions({ ...options, header: !options.header })}
+              disabled={isUploading}
+            />
+            <Label htmlFor="hasHeader">Has header row</Label>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="autoDetect"
+              checked={options.autoDetect}
+              onCheckedChange={() => setOptions({ ...options, autoDetect: !options.autoDetect })}
+              disabled={isUploading}
+            />
+            <Label htmlFor="autoDetect">Auto-detect data types</Label>
+          </div>
+        </div>
+      );
+
+    case "json":
+      return (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="jsonFormat">JSON Format</Label>
+            <Select
+              value={options.jsonFormat}
+              onValueChange={(value: "auto" | "newline_delimited" | "records") =>
+                setOptions({ ...options, jsonFormat: value })
+              }
+              disabled={isUploading}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {JSON_FORMATS.map(format => (
+                  <SelectItem key={format.value} value={format.value}>
+                    {format.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      );
+
+    case "parquet":
+      return null;
+
+    case "arrow":
+      return (
+        <div className="space-y-4">
+          <div className="text-sm text-muted-foreground">
+            Arrow files will be imported using default settings.
+          </div>
+        </div>
+      );
+
+    default:
+      return null;
+  }
+}

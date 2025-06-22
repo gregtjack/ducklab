@@ -4,13 +4,12 @@ import { Button } from "./ui/button";
 import { NotebookList } from "./notebook/nav";
 import { CatalogList } from "./catalog/catalog-list";
 import { useState, useRef, useEffect } from "react";
-import { PanelLeftInactive, PanelLeft } from "lucide-react";
-import { ThemeSwitch } from "./theme-switch";
-import { DuckDBStatus } from "./duckdb-status-indicator";
+import { PanelLeftInactive, PanelLeft, InfoIcon, Settings } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 400;
-const DEFAULT_WIDTH = 225;
+const DEFAULT_WIDTH = 240;
 const SPACING = 10;
 const CLOSE_DELAY = 300;
 
@@ -23,15 +22,37 @@ interface SidebarHeaderProps {
 function SidebarHeader({ isDocked, onToggleDock }: SidebarHeaderProps) {
   return (
     <div className="px-3 py-2 flex items-center justify-between">
-      <div className="text-2xl tracking-tight font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
-        ducklab
+      <div className="text-2xl tracking-tight font-mono font-black text-transparent bg-clip-text bg-primary">
+        <Link to="/">DuckLab</Link>
       </div>
       <div className="flex items-center gap-2">
         <Button variant="ghost" className="p-0 size-6 text-muted-foreground" onClick={onToggleDock}>
           {isDocked ? <PanelLeftInactive className="size-4" /> : <PanelLeft className="size-4" />}
         </Button>
-        <ThemeSwitch />
       </div>
+    </div>
+  );
+}
+
+function SidebarFooter() {
+  return (
+    <div className="flex flex-col gap-2 px-3 pb-3">
+      <Link
+        to="/settings"
+        className="flex items-center gap-2 w-full p-2 rounded-lg hover:bg-accent"
+        activeProps={{ className: "bg-accent border font-semibold" }}
+      >
+        <Settings className="size-4" />
+        <span className="text-sm">Settings</span>
+      </Link>
+      <Link
+        to="/about"
+        className="flex items-center gap-2 w-full p-2 rounded-lg hover:bg-accent"
+        activeProps={{ className: "bg-accent border font-semibold" }}
+      >
+        <InfoIcon className="size-4" />
+        <span className="text-sm">About DuckLab</span>
+      </Link>
     </div>
   );
 }
@@ -101,7 +122,7 @@ export function Sidebar() {
   const sidebarClasses = [
     "bg-sidebar relative border-r overflow-ellipsis z-25",
     !isDocked &&
-    "fixed shadow-xl rounded border z-50 bg-card/85 backdrop-blur-lg motion-reduce:transition-none transition-all duration-150",
+      "fixed shadow-xl rounded-lg border z-50 bg-sidebar/75 backdrop-blur-md motion-reduce:transition-none transition-all duration-150",
     !isDocked && !isVisible && "translate-x-[-110%]",
   ]
     .filter(Boolean)
@@ -122,31 +143,28 @@ export function Sidebar() {
           onMouseEnter={() => setIsVisible(true)}
         />
       )}
-      <div className="absolute left-0 top-0 h-full z-[200] bg-red-500 opacity-50 pointer-events-none" style={sidebarStyle} onMouseLeave={handleMouseLeave} />
       <aside
         ref={sidebarRef}
         className={sidebarClasses}
         style={sidebarStyle}
-
         onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         <div className="flex flex-col h-full">
           <SidebarHeader
             isDocked={isDocked}
             onToggleDock={() => {
               setIsDocked(!isDocked);
-              //   setWidth(DEFAULT_WIDTH);
+              setWidth(DEFAULT_WIDTH);
             }}
             onToggleVisibility={() => setIsVisible(false)}
           />
 
-          <nav className="flex-1 pt-2 space-y-2">
+          <nav className="flex-1 my-2 space-y-2 px-3 overflow-y-scroll">
             <NotebookList />
             <CatalogList />
           </nav>
-          <div className="px-3 pb-3">
-            <DuckDBStatus />
-          </div>
+          <SidebarFooter />
         </div>
         {isDocked && (
           <div

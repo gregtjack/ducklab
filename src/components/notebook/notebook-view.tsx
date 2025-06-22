@@ -1,24 +1,35 @@
 "use client";
 
-import { useNotebook } from "./notebook-context";
+import { useNotebookStore, useActiveNotebook } from "@/store/notebook-store";
 import { NotebookCell } from "./notebook-cell";
 import { Loader2, PencilIcon, PlusIcon } from "lucide-react";
-import { v4 as uuidv4 } from "uuid";
-import React, { useState } from "react";
+import { nanoid } from "nanoid";
+import React, { useState, useEffect } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
+import { useParams } from "@tanstack/react-router";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { EmojiPicker, EmojiPickerContent, EmojiPickerSearch } from "@/components/ui/emoji-picker";
 
 export function NotebookView() {
-  const { activeNotebook, addCell, updateNotebook, isLoading } = useNotebook();
+  const { addCell, updateNotebook, isLoading, setActiveNotebook } = useNotebookStore();
+  const activeNotebook = useActiveNotebook();
+  const { id: notebookId } = useParams({ from: "/notebook/$id" });
   const [isEditingName, setIsEditingName] = useState(false);
-  const [newName, setNewName] = useState("");
+  const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
+
+  useEffect(() => {
+    if (notebookId && activeNotebook?.id !== notebookId) {
+      setActiveNotebook(notebookId);
+    }
+  }, [notebookId, activeNotebook?.id, setActiveNotebook]);
 
   const handleAddCell = (index?: number) => {
     if (!activeNotebook) return;
 
     const newCell = {
-      id: uuidv4(),
+      id: nanoid(),
       index: index ?? 0,
       query: "",
       results: null,
@@ -29,19 +40,24 @@ export function NotebookView() {
     addCell(activeNotebook.id, newCell, index);
   };
 
-  const handleNameSubmit = async () => {
-    if (!activeNotebook || !newName.trim()) return;
-    await updateNotebook(activeNotebook.id, { name: newName.trim() });
+  const handleNameSubmit = async (e: React.FormEvent<HTMLInputElement>) => {
+    if (!activeNotebook || !e.currentTarget.value.trim()) return;
+    await updateNotebook(activeNotebook.id, { name: e.currentTarget.value });
     setIsEditingName(false);
   };
 
-  const handleNameKeyDown = (e: React.KeyboardEvent) => {
+  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      handleNameSubmit();
+      handleNameSubmit(e);
     } else if (e.key === "Escape") {
       setIsEditingName(false);
-      setNewName(activeNotebook?.name || "");
     }
+  };
+
+  const handleIconSelect = async (emoji: { emoji: string; label: string }) => {
+    if (!activeNotebook) return;
+    await updateNotebook(activeNotebook.id, { icon: emoji.emoji });
+    setIsIconPickerOpen(false);
   };
 
   if (!activeNotebook) {
@@ -63,29 +79,42 @@ export function NotebookView() {
 
   return (
     <div className="mx-auto max-w-[96rem] flex flex-col w-full p-4 gap-4">
-      <div className="shrink-0 w-fit">
-        {isEditingName ? (
-          <input
-            value={newName}
-            onFocus={e => e.target.select()}
-            onChange={e => setNewName(e.target.value)}
-            onKeyDown={handleNameKeyDown}
-            onBlur={handleNameSubmit}
-            autoFocus
-            className="text-xl font-semibold bg-accent/75 border-none outline-none px-2 py-1 rounded-md"
-          />
-        ) : (
-          <div
-            className="flex items-center gap-2 cursor-pointer group"
-            onClick={() => {
-              setNewName(activeNotebook.name);
-              setIsEditingName(true);
-            }}
-          >
-            <h2 className="text-xl font-semibold">{activeNotebook.name}</h2>
-            <PencilIcon className="size-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </div>
-        )}
+      <div className="flex items-center gap-3">
+        <div className="shrink-0 w-fit">
+          <Popover open={isIconPickerOpen} onOpenChange={setIsIconPickerOpen}>
+            <PopoverTrigger asChild>
+              <div className="size-8 flex hover:bg-accent transition-colors rounded-md p-0.5 items-center justify-center gap-2 cursor-pointer group">
+                <h2 className="text-2xl font-semibold">{activeNotebook.icon}</h2>
+              </div>
+            </PopoverTrigger>
+            <PopoverContent className="w-fit h-84 p-0 border" align="start">
+              <EmojiPicker onEmojiSelect={handleIconSelect}>
+                <EmojiPickerSearch />
+                <EmojiPickerContent />
+              </EmojiPicker>
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div className="shrink-0 w-fit">
+          {isEditingName ? (
+            <input
+              defaultValue={activeNotebook.name}
+              onFocus={e => e.target.select()}
+              onKeyDown={handleNameKeyDown}
+              onBlur={handleNameSubmit}
+              autoFocus
+              className="text-xl font-semibold bg-accent/75 border-none outline-none px-2 py-1 rounded-md"
+            />
+          ) : (
+            <div
+              className="flex items-center gap-2 cursor-pointer group"
+              onClick={() => setIsEditingName(true)}
+            >
+              <h2 className="text-2xl font-semibold">{activeNotebook.name}</h2>
+              <PencilIcon className="size-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+          )}
+        </div>
       </div>
       <div>
         {activeNotebook.cells.map((cell, idx) => (

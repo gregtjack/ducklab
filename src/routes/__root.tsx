@@ -7,7 +7,6 @@ import { NotFound } from "@/components/NotFound";
 import appCss from "@/styles/app.css?url";
 import { seo } from "@/utils/seo";
 import { ThemeProvider } from "@/components/theme-provider";
-import { NotebookProvider } from "@/components/notebook/notebook-context";
 import { Toaster } from "@/components/ui/sonner";
 import { useDuckDBStore } from "@/store/duckdb-store";
 import { Sidebar } from "@/components/sidebar";
@@ -50,12 +49,6 @@ export const Route = createRootRoute({
       { rel: "manifest", href: "/site.webmanifest", color: "#fffff" },
       { rel: "icon", href: "/favicon.ico" },
     ],
-    scripts: [
-      {
-        src: "/customScript.js",
-        type: "text/javascript",
-      },
-    ],
   }),
   errorComponent: props => {
     return (
@@ -78,14 +71,13 @@ function RootComponent() {
   return (
     <RootDocument>
       <ThemeProvider defaultTheme="dark">
-        <NotebookProvider>
-          <div className="flex h-screen text-gray-900 dark:text-gray-100">
-            <Sidebar />
-            <main className="flex-1 overflow-auto transition-[margin] duration-200">
-              <Outlet />
-            </main>
-          </div>
-        </NotebookProvider>
+        <div className="flex h-screen text-gray-900 dark:text-gray-100">
+          <Sidebar />
+          <main className="flex-1 overflow-auto transition-[margin] duration-200">
+            <Outlet />
+          </main>
+        </div>
+
         <Toaster richColors />
       </ThemeProvider>
     </RootDocument>
@@ -96,7 +88,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html suppressHydrationWarning>
       <head>
-        <script src="https://unpkg.com/react-scan/dist/auto.global.js" />
         <HeadContent />
       </head>
       <body className="antialiased">

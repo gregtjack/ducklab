@@ -1,4 +1,5 @@
 import * as duckdb from "@duckdb/duckdb-wasm";
+import { DuckDBError } from "@/lib/types/duckdb";
 
 const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
 
@@ -7,14 +8,7 @@ let worker: Worker | null = null;
 let isInitializing = false;
 let initializationError: Error | null = null;
 
-export class DuckDBError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "DuckDBError";
-  }
-}
-
-export async function initializeDB(): Promise<duckdb.AsyncDuckDB> {
+export async function initializeDuckDB(): Promise<duckdb.AsyncDuckDB> {
   if (DB) {
     return DB;
   }
@@ -65,14 +59,14 @@ export async function initializeDB(): Promise<duckdb.AsyncDuckDB> {
   }
 }
 
-export async function getDB(): Promise<duckdb.AsyncDuckDB> {
+export async function getDuckDB(): Promise<duckdb.AsyncDuckDB> {
   if (!DB) {
-    return await initializeDB();
+    return await initializeDuckDB();
   }
   return DB;
 }
 
-export async function cleanupDB(): Promise<void> {
+export async function cleanupDuckDB(): Promise<void> {
   if (DB) {
     try {
       await DB.terminate();

@@ -26,7 +26,7 @@ export function QueryResults({ results, isLoading, error }: QueryResultsProps) {
   if (error) {
     return (
       <div className="h-full">
-        <p className="text-red-500 font-mono text-sm">{error.message}</p>
+        <p className="text-red-500 font-mono text-sm p-2">{error.message}</p>
       </div>
     );
   }
@@ -40,9 +40,7 @@ export function QueryResults({ results, isLoading, error }: QueryResultsProps) {
   }
 
   return (
-    <div
-      className={`flex flex-col h-full ${isFullscreen ? "fixed inset-0 z-30 bg-card" : ""}`}
-    >
+    <div className={`flex flex-col h-full ${isFullscreen ? "fixed inset-0 z-30 bg-card" : ""}`}>
       <div className="h-12 text-muted-foreground flex px-2 items-center bg-card justify-between border-b">
         <h3 className="text-xs uppercase">Query Results</h3>
         <button
