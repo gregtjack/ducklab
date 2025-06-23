@@ -13,12 +13,12 @@ export async function initializeDuckDB(): Promise<duckdb.AsyncDuckDB> {
     return DB;
   }
 
-  if (isInitializing) {
-    throw new DuckDBError("DuckDB is already initializing");
+  if (typeof window === "undefined") {
+    throw new DuckDBError("DuckDB is not supported in this environment");
   }
 
-  if (initializationError) {
-    throw initializationError;
+  if (isInitializing) {
+    throw new DuckDBError("DuckDB is already initializing");
   }
 
   try {

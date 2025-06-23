@@ -72,9 +72,10 @@ const useResize = ({ initialHeight, onResize }: UseResizeProps) => {
 };
 
 function NotebookCell({ cellId, index }: NotebookCellProps) {
-  const { updateCell, removeCell } = useNotebookStore();
+  const updateCell = useNotebookStore(state => state.updateCell);
+  const removeCell = useNotebookStore(state => state.removeCell);
+  const runQuery = useDuckDBStore(state => state.runQuery);
   const activeNotebook = useActiveNotebook();
-  const { runQuery } = useDuckDBStore();
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);

@@ -59,7 +59,7 @@ export function NotebookList() {
           </div>
         </div>
       ) : (
-        <div className="space-y-1 mb-3 overflow-y-auto max-h-[calc(100vh-10rem)]">
+        <div className="space-y-1 mb-3">
           {notebooks
             .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
             .map(notebook => (
@@ -67,10 +67,10 @@ export function NotebookList() {
                 key={notebook.id}
                 to="/notebook/$id"
                 params={{ id: notebook.id }}
-                activeProps={{ className: "bg-accent border font-semibold" }}
-                className={`w-full flex items-center justify-between p-2 rounded-lg h-9 transition-colors hover:bg-accent cursor-pointer hover:text-accent-foreground`}
+                activeProps={{ className: "bg-primary/10 border border-primary/20" }}
+                className={`w-full flex items-center justify-between p-2 transition-all rounded-lg h-9 hover:bg-primary/15 cursor-pointer hover:text-accent-foreground`}
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 truncate">
                   <span className="text-lg">{notebook.icon}</span>
                   <span className="text-sm truncate">{notebook.name}</span>
                 </div>

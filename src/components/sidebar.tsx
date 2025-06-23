@@ -22,11 +22,11 @@ interface SidebarHeaderProps {
 function SidebarHeader({ isDocked, onToggleDock }: SidebarHeaderProps) {
   return (
     <div className="px-3 py-2 flex items-center justify-between">
-      <div className="text-2xl tracking-tight font-mono font-black text-transparent bg-clip-text bg-primary">
+      <div className="text-2xl tracking-tight font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-indigo-400">
         <Link to="/">DuckLab</Link>
       </div>
       <div className="flex items-center gap-2">
-        <Button variant="ghost" className="p-0 size-6 text-muted-foreground" onClick={onToggleDock}>
+        <Button variant="ghost" className="p-0 size-6 text-muted-foreground" onClick={onToggleDock} title={isDocked ? "Undock sidebar" : "Dock sidebar"}>
           {isDocked ? <PanelLeftInactive className="size-4" /> : <PanelLeft className="size-4" />}
         </Button>
       </div>
@@ -36,19 +36,19 @@ function SidebarHeader({ isDocked, onToggleDock }: SidebarHeaderProps) {
 
 function SidebarFooter() {
   return (
-    <div className="flex flex-col gap-2 px-3 pb-3">
+    <div className="flex flex-col gap-1 px-3 pb-3">
       <Link
         to="/settings"
-        className="flex items-center gap-2 w-full p-2 rounded-lg hover:bg-accent"
-        activeProps={{ className: "bg-accent border font-semibold" }}
+        className="flex items-center gap-2 w-full p-2 rounded-lg hover:bg-primary/15 transition-all"
+        activeProps={{ className: "bg-primary/10 border border-primary/20" }}
       >
         <Settings className="size-4" />
         <span className="text-sm">Settings</span>
       </Link>
       <Link
         to="/about"
-        className="flex items-center gap-2 w-full p-2 rounded-lg hover:bg-accent"
-        activeProps={{ className: "bg-accent border font-semibold" }}
+        className="flex items-center gap-2 w-full p-2 rounded-lg hover:bg-primary/15 transition-all"
+        activeProps={{ className: "bg-primary/10 border border-primary/20" }}
       >
         <InfoIcon className="size-4" />
         <span className="text-sm">About DuckLab</span>
@@ -122,7 +122,7 @@ export function Sidebar() {
   const sidebarClasses = [
     "bg-sidebar relative border-r overflow-ellipsis z-25",
     !isDocked &&
-      "fixed shadow-xl rounded-lg border z-50 bg-sidebar/75 backdrop-blur-md motion-reduce:transition-none transition-all duration-150",
+    "fixed shadow-xl rounded-lg border z-50 bg-sidebar/75 backdrop-blur-md motion-reduce:transition-none transition-all duration-150",
     !isDocked && !isVisible && "translate-x-[-110%]",
   ]
     .filter(Boolean)
@@ -160,7 +160,7 @@ export function Sidebar() {
             onToggleVisibility={() => setIsVisible(false)}
           />
 
-          <nav className="flex-1 my-2 space-y-2 px-3 overflow-y-scroll">
+          <nav className="flex-1 my-2 space-y-2 px-3 overflow-y-auto">
             <NotebookList />
             <CatalogList />
           </nav>

@@ -33,7 +33,6 @@ interface CatalogState {
   refreshDatasets: () => void;
   startAutoSync: (intervalMs?: number) => void;
   stopAutoSync: () => void;
-  waitForDuckDB: () => Promise<void>;
   getTableInfo: (
     tableName: string,
   ) => Promise<{ rowCount: number | bigint; size: number | bigint }>;
@@ -55,40 +54,8 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
   autoSyncInterval: null,
   isAutoSyncEnabled: false,
 
-  waitForDuckDB: async () => {
-    const { isDuckDBReady } = useDuckDBStore.getState();
-
-    // If already ready, return immediately
-    if (isDuckDBReady()) {
-      return;
-    }
-
-    console.log("Waiting for DuckDB to be ready...");
-
-    // Wait for DuckDB to be ready with a timeout
-    return new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        console.error("Timeout waiting for DuckDB to be ready");
-        reject(new Error("Timeout waiting for DuckDB to be ready"));
-      }, 30000); // 30 second timeout
-
-      const checkReady = () => {
-        if (isDuckDBReady()) {
-          console.log("DuckDB is now ready");
-          clearTimeout(timeout);
-          resolve();
-        } else {
-          // Check again in 100ms
-          setTimeout(checkReady, 100);
-        }
-      };
-
-      checkReady();
-    });
-  },
-
   addDataset: async dataset => {
-    await get().waitForDuckDB();
+    await useDuckDBStore.getState().waitForReady();
 
     const { db } = useDuckDBStore.getState();
     if (!db) {
@@ -108,7 +75,7 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
   },
 
   removeDataset: async id => {
-    await get().waitForDuckDB();
+    await useDuckDBStore.getState().waitForReady();
 
     const { db, runQuery } = useDuckDBStore.getState();
     if (!db) {
@@ -146,7 +113,7 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
   },
 
   getTableInfo: async (tableName: string) => {
-    await get().waitForDuckDB();
+    await useDuckDBStore.getState().waitForReady();
 
     const { conn } = useDuckDBStore.getState();
     if (!conn) {
@@ -166,7 +133,7 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
   },
 
   getTableSchema: async (tableName: string) => {
-    await get().waitForDuckDB();
+    await useDuckDBStore.getState().waitForReady();
 
     const { conn } = useDuckDBStore.getState();
     if (!conn) {
@@ -199,7 +166,7 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
   },
 
   sync: async () => {
-    await get().waitForDuckDB();
+    await useDuckDBStore.getState().waitForReady();
 
     const { conn } = useDuckDBStore.getState();
     if (!conn) {
@@ -276,10 +243,8 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
   },
 
   startAutoSync: (intervalMs = 5000) => {
-    const { stopAutoSync } = get();
-
     // Stop any existing auto-sync
-    stopAutoSync();
+    get().stopAutoSync();
 
     // Start new auto-sync interval
     const interval = window.setInterval(() => {

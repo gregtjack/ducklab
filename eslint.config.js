@@ -12,7 +12,11 @@ export default tseslint.config(
       sourceType: "module",
     },
     rules: {
-      // Add any custom rules here
+      "no-unused-vars": "warn",
+      "no-unused-imports": "warn",
     },
+  },
+  {
+    ignores: ["node_modules", ".tanstack", ".output", ".nitro", "dist", "build", "public", "public/**", "dist/**", "build/**"],
   },
 );

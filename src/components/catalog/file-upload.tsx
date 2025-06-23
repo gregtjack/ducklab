@@ -2,15 +2,16 @@
 
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Switch } from "./ui/switch";
-import { Progress } from "./ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Upload, Loader2, ImportIcon } from "lucide-react";
-import { useDuckDBStore, ImportOptions, FileFormat } from "@/store/duckdb-store";
+import { useDuckDBStore } from "@/store/duckdb-store";
+import { type ImportOptions, type FileFormat, fileFormats } from "@/lib/types/fs";
 import { useCatalogStore } from "@/store/catalog-store";
 import {
   Dialog,
@@ -19,16 +20,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "./ui/dialog";
+} from "@/components/ui/dialog";
 
 type FileUploadProps = React.PropsWithChildren;
-
-const FILE_FORMATS: { value: FileFormat; label: string; extensions: string[] }[] = [
-  { value: "csv", label: "CSV", extensions: [".csv"] },
-  { value: "json", label: "JSON", extensions: [".json"] },
-  { value: "parquet", label: "Parquet", extensions: [".parquet", ".pq"] },
-  { value: "arrow", label: "Arrow", extensions: [".arrow", ".feather"] },
-];
 
 const JSON_FORMATS = [
   { value: "auto", label: "Auto-detect" },
@@ -83,7 +77,7 @@ export function FileUpload({ children }: FileUploadProps) {
   const { refreshDatasets } = useCatalogStore();
 
   const getAcceptedFileTypes = () => {
-    const format = FILE_FORMATS.find(f => f.value === selectedFormat);
+    const format = fileFormats.find(f => f.value === selectedFormat);
     return format ? format.extensions : [];
   };
 
@@ -104,7 +98,7 @@ export function FileUpload({ children }: FileUploadProps) {
       const file = acceptedFiles[0];
       setFile(file);
       const fileName = file.name.toLowerCase();
-      const format = FILE_FORMATS.find(f => f.extensions.some(ext => fileName.endsWith(ext)));
+      const format = fileFormats.find(f => f.extensions.some(ext => fileName.endsWith(ext)));
       setSelectedFormat(format?.value || "csv");
       setTableName(inferTableName(file.name));
     },
@@ -179,7 +173,8 @@ export function FileUpload({ children }: FileUploadProps) {
       "text/csv": [".csv"],
       "application/csv": [".csv"],
       "application/json": [".json"],
-      "application/octet-stream": [".parquet", ".pq", ".arrow", ".feather"],
+      "application/octet-stream": [".parquet", ".pq"],
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
     },
     multiple: false,
     disabled: isUploading,
@@ -216,11 +211,10 @@ export function FileUpload({ children }: FileUploadProps) {
             <h4 className="text-sm font-medium">Open file</h4>
             <div
               {...getRootProps()}
-              className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                isDragActive
-                  ? "border-primary bg-primary/5"
-                  : "border-muted-foreground/25 hover:border-primary/50"
-              } ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
+              className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${isDragActive
+                ? "border-primary bg-primary/5"
+                : "border-muted-foreground/25 hover:border-primary/50"
+                } ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <input {...getInputProps()} />
               <Upload className="mx-auto size-8 text-muted-foreground mb-2" />
@@ -231,7 +225,7 @@ export function FileUpload({ children }: FileUploadProps) {
               ) : (
                 <div>
                   <p className="text-sm font-medium mb-1">
-                    Drag and drop any {FILE_FORMATS.map(f => f.label).join(", ")} file here
+                    Drag and drop any {fileFormats.map(f => f.label).join(", ")} file here
                   </p>
                   <p className="text-xs text-muted-foreground">or click to browse</p>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -243,9 +237,7 @@ export function FileUpload({ children }: FileUploadProps) {
           </div>
           {/* URL Import */}
           <div className="space-y-4">
-            <h4 className="flex justify-center items-center gap-2 text-sm font-medium">
-              Or import from URL
-            </h4>
+            <h4 className="text-sm font-medium">Or import from a public URL</h4>
 
             <div className="flex gap-2">
               <Input
@@ -266,19 +258,11 @@ export function FileUpload({ children }: FileUploadProps) {
                 onChange={e => setTableName(e.target.value)}
                 placeholder="Enter table name"
                 disabled={isUploading}
-                className={file && tableName === inferTableName(file.name) ? "pr-20" : ""}
               />
-              {file && tableName === inferTableName(file.name) && (
-                <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                  <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                    Auto-generated
-                  </span>
-                </div>
-              )}
             </div>
             {file && (
               <p className="text-xs text-muted-foreground">
-                Table name inferred from "{file.name}". You can modify it if needed.
+                Table name inferred from file name. You can modify it if needed.
               </p>
             )}
           </div>
@@ -293,7 +277,7 @@ export function FileUpload({ children }: FileUploadProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {FILE_FORMATS.map(format => (
+                {fileFormats.map(format => (
                   <SelectItem key={format.value} value={format.value}>
                     {format.label}
                   </SelectItem>
@@ -303,7 +287,6 @@ export function FileUpload({ children }: FileUploadProps) {
           </div>
           {/* Format-specific import options */}
           <div className="space-y-4">
-            <h4 className="text-sm font-medium">Import options</h4>
             <FileOptions
               selectedFormat={selectedFormat}
               options={importOptions}
@@ -347,9 +330,10 @@ function FileOptions({
   switch (selectedFormat) {
     case "csv":
       return (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+        <div className="space-y-4 bg-muted rounded-md p-4">
+          <h4 className="text-sm font-medium">CSV Import Options</h4>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 justify-between">
               <Label htmlFor="delimiter">Delimiter</Label>
               <Input
                 id="delimiter"
@@ -357,10 +341,11 @@ function FileOptions({
                 onChange={e => setOptions({ ...options, delimiter: e.target.value })}
                 placeholder=","
                 disabled={isUploading}
+                className="max-w-32"
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="flex items-center gap-2 justify-between">
               <Label htmlFor="sampleSize">Sample Size</Label>
               <Input
                 id="sampleSize"
@@ -368,70 +353,55 @@ function FileOptions({
                 value={options.sampleSize}
                 onChange={e => setOptions({ ...options, sampleSize: Number(e.target.value) })}
                 disabled={isUploading}
+                className="max-w-32"
               />
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2 justify-between">
+            <Label htmlFor="hasHeader">Has header row</Label>
             <Switch
               id="hasHeader"
               checked={options.header}
               onCheckedChange={() => setOptions({ ...options, header: !options.header })}
               disabled={isUploading}
             />
-            <Label htmlFor="hasHeader">Has header row</Label>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="autoDetect"
-              checked={options.autoDetect}
-              onCheckedChange={() => setOptions({ ...options, autoDetect: !options.autoDetect })}
-              disabled={isUploading}
-            />
-            <Label htmlFor="autoDetect">Auto-detect data types</Label>
           </div>
         </div>
       );
 
     case "json":
       return (
-        <div className="space-y-4">
+        <div className="space-y-4 bg-muted rounded-md p-4">
+          <h4 className="text-sm font-medium">JSON Import Options</h4>
           <div className="space-y-2">
-            <Label htmlFor="jsonFormat">JSON Format</Label>
-            <Select
-              value={options.jsonFormat}
-              onValueChange={(value: "auto" | "newline_delimited" | "records") =>
-                setOptions({ ...options, jsonFormat: value })
-              }
-              disabled={isUploading}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {JSON_FORMATS.map(format => (
-                  <SelectItem key={format.value} value={format.value}>
-                    {format.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2 justify-between">
+              <Label htmlFor="jsonFormat">Format</Label>
+              <Select
+                value={options.jsonFormat}
+                onValueChange={(value: "auto" | "newline_delimited" | "records") =>
+                  setOptions({ ...options, jsonFormat: value })
+                }
+                disabled={isUploading}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {JSON_FORMATS.map(format => (
+                    <SelectItem key={format.value} value={format.value}>
+                      {format.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
       );
 
     case "parquet":
       return null;
-
-    case "arrow":
-      return (
-        <div className="space-y-4">
-          <div className="text-sm text-muted-foreground">
-            Arrow files will be imported using default settings.
-          </div>
-        </div>
-      );
 
     default:
       return null;

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Database, Palette, Monitor } from "lucide-react";
+import { Database, Settings2 } from "lucide-react";
 import { DuckDBSettings } from "./duckdb-settings";
 import { GeneralSettings } from "./general-settings";
 import { match } from "ts-pattern";
@@ -11,7 +11,7 @@ const sections = [
     id: "general" as SettingsSection,
     title: "General",
     description: "Basic application settings",
-    icon: Monitor,
+    icon: Settings2,
   },
   {
     id: "duckdb" as SettingsSection,
@@ -36,9 +36,8 @@ export function SettingsLayout() {
             return (
               <button
                 key={section.id}
-                className={`flex items-center w-full justify-start hover:bg-accent gap-3 px-2 py-1.5 rounded-md transition-colors ${
-                  isActive ? "bg-accent" : ""
-                }`}
+                className={`flex items-center w-full justify-start hover:bg-accent gap-3 px-2 py-1.5 rounded-md transition-colors ${isActive ? "bg-accent" : ""
+                  }`}
                 onClick={() => setActiveSection(section.id)}
               >
                 <Icon className="size-4" />

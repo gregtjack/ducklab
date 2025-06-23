@@ -2,8 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useNotebookStore } from "@/store/notebook-store";
-import { Plus, Notebook, FileSpreadsheetIcon, PlusIcon } from "lucide-react";
-import { FileUpload } from "@/components/file-upload";
+import { Plus, Notebook, FileSpreadsheetIcon, PlusIcon, Settings2 } from "lucide-react";
+import { FileUpload } from "@/components/catalog/file-upload";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -25,18 +25,18 @@ function Home() {
     <div className="container mx-auto px-6 py-8 max-w-4xl">
       {/* Header */}
       <div className="mb-4">
-        <p className="text-lg font-medium">Welcome to DuckLab</p>
+        <p className="text-lg font-medium">Welcome to DuckLab!</p>
         <p className="text-sm text-muted-foreground">Choose a quick action to get started</p>
       </div>
 
       {/* Quick Actions */}
       <div className="mb-8 flex gap-2">
-        <Button variant="outline" onClick={handleCreateNotebook} className="w-full sm:w-auto">
+        <Button onClick={handleCreateNotebook} className="w-full sm:w-auto">
           <PlusIcon />
           Create notebook
         </Button>
         <FileUpload>
-          <Button variant="outline" className="w-full sm:w-auto">
+          <Button className="w-full sm:w-auto">
             <FileSpreadsheetIcon />
             Import data
           </Button>

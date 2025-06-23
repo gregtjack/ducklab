@@ -8,7 +8,7 @@ export const Route = createFileRoute("/settings")({
 
 function SettingsPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div>
       <div className="container mx-auto p-5">
         <div className="flex items-center gap-3 mb-8">
           <div className="p-2 bg-primary/10 rounded-lg">

@@ -12,10 +12,28 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import prettyBytes from "pretty-bytes";
+import { useEffect, useState } from "react";
 
 export function DuckDBSettings() {
-  const { isLoading, error, errorHistory, memoryUsage, reset, updateMemoryUsage } =
+  const { isLoading, error, errorHistory, memoryUsage, reset, updateMemoryUsage, conn, waitForReady } =
     useDuckDBStore();
+
+  const [loadingVersion, setLoadingVersion] = useState(false);
+  const [version, setVersion] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchVersion = async () => {
+      await waitForReady();
+      const result = await conn?.query("SELECT version()");
+      const version = result?.get(0)?.toArray()[0] as string;
+      setVersion(version);
+    };
+
+    setLoadingVersion(true);
+    fetchVersion().then(() => {
+      setLoadingVersion(false);
+    });
+  }, []);
 
   const getStatusIcon = () => {
     if (isLoading) return <Loader2 className="h-4 w-4 animate-spin" />;
@@ -38,8 +56,7 @@ export function DuckDBSettings() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold">DuckDB Configuration</h3>
-        <p className="text-muted-foreground">Monitor and configure your DuckDB database</p>
+        <h3 className="text-lg font-semibold">DuckDB</h3>
       </div>
 
       {/* Status Card */}
@@ -129,28 +146,34 @@ export function DuckDBSettings() {
       </Card>
 
       {/* Configuration Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Configuration</CardTitle>
-          <CardDescription>Current DuckDB configuration details</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Engine:</span>
-              <span>DuckDB WebAssembly</span>
+      {loadingVersion ? (
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="h-4 w-4 animate-spin" />
+        </div>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Configuration</CardTitle>
+            <CardDescription>Current DuckDB configuration details</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Engine:</span>
+                <span>DuckDB WebAssembly</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Storage:</span>
+                <span>In-Memory</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Version:</span>
+                <span>{version}</span>
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Storage:</span>
-              <span>In-Memory</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Version:</span>
-              <span>1.29.1-dev132.0</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

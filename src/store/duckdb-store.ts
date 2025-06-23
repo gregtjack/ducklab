@@ -3,31 +3,10 @@ import * as duckdb from "@duckdb/duckdb-wasm";
 import { getDuckDB, cleanupDuckDB } from "../lib/duckdb";
 import { DuckDBError } from "@/lib/types/duckdb";
 import * as arrow from "apache-arrow";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type QueryResult<T extends arrow.TypeMap = any> = {
-  query: string;
-  table: arrow.Table<T>;
-  duration: number;
-};
-
-export type FileFormat = "csv" | "json" | "parquet" | "arrow";
-
-export interface ImportOptions {
-  tableName: string;
-  format: FileFormat;
-  // CSV specific options
-  delimiter?: string;
-  header?: boolean;
-  autoDetect?: boolean;
-  sampleSize?: number;
-  // JSON specific options
-  jsonFormat?: "auto" | "newline_delimited" | "records";
-  // Parquet specific options
-  compression?: string;
-  // Arrow specific options
-  arrowSchema?: arrow.Schema;
-}
+import { match } from "ts-pattern";
+import { type QueryResult } from "@/lib/types/query-result";
+import { type ImportOptions } from "@/lib/types/fs";
+import { nanoid } from "nanoid";
 
 interface DuckDBState {
   db: duckdb.AsyncDuckDB | null;
@@ -37,8 +16,10 @@ interface DuckDBState {
   errorHistory: Error[] | null;
   memoryUsage: number | null;
   initialize: () => Promise<void>;
+  installExtensions: () => Promise<void>;
   updateMemoryUsage: () => Promise<void>;
   isDuckDBReady: () => boolean;
+  waitForReady: () => Promise<void>;
   runQuery: <T extends arrow.TypeMap>(query: string, timeoutMs?: number) => Promise<QueryResult<T>>;
   registerFile: (name: string, file: File) => Promise<void>;
   registerURL: (name: string, url: string) => Promise<void>;
@@ -46,9 +27,11 @@ interface DuckDBState {
   importFromURL: (url: string, options: ImportOptions) => Promise<void>;
   importFromRegisteredFile: (fileName: string, options: ImportOptions) => Promise<void>;
   importCSV: (fileName: string, options: ImportOptions) => Promise<void>;
-  buildJSONImportQuery: (fileName: string, options: ImportOptions) => string;
+  importJSON: (fileName: string, options: ImportOptions) => Promise<void>;
   importParquet: (fileName: string, options: ImportOptions) => Promise<void>;
-  buildArrowImportQuery: (fileName: string, options: ImportOptions) => string;
+  importExcel: (fileName: string, options: ImportOptions) => Promise<void>;
+  exportResults: (queryResult: QueryResult, format: "csv" | "parquet") => Promise<string>;
+  exportTable: (tableName: string, format: "csv" | "parquet" | "json") => Promise<string>;
   reset: () => Promise<void>;
   cleanup: () => Promise<void>;
 }
@@ -67,6 +50,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
       const connection = await database.connect();
 
       set({ db: database, conn: connection, error: null });
+      await get().installExtensions();
 
       const { updateMemoryUsage } = get();
       await updateMemoryUsage();
@@ -77,6 +61,46 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
     } finally {
       set({ isLoading: false });
     }
+  },
+
+  installExtensions: async () => {
+    const { conn } = get();
+    if (!conn) {
+      throw new DuckDBError("DuckDB is not ready yet.");
+    }
+    await conn.query(`LOAD excel;`);
+  },
+
+  waitForReady: async () => {
+    const { isDuckDBReady } = get();
+
+    // If already ready, return immediately
+    if (isDuckDBReady()) {
+      return;
+    }
+
+    console.log("Waiting for DuckDB to be ready...");
+
+    // Wait for DuckDB to be ready with a timeout
+    return new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        console.error("Timeout waiting for DuckDB to be ready");
+        reject(new Error("Timeout waiting for DuckDB to be ready"));
+      }, 30000); // 30 second timeout
+
+      const checkReady = () => {
+        if (isDuckDBReady()) {
+          console.log("DuckDB is now ready");
+          clearTimeout(timeout);
+          resolve();
+        } else {
+          // Check again in 100ms
+          setTimeout(checkReady, 100);
+        }
+      };
+
+      checkReady();
+    });
   },
 
   updateMemoryUsage: async () => {
@@ -227,22 +251,14 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
       throw new DuckDBError("DuckDB is not ready yet.");
     }
 
-    switch (options.format) {
-      case "csv":
-        await get().importCSV(fileName, options);
-        break;
-      case "json":
-        // await get().importJSON(fileName, options);
-        break;
-      case "parquet":
-        await get().importParquet(fileName, options);
-        break;
-      case "arrow":
-        // await get().importArrow(fileName, options);
-        break;
-      default:
+    match(options.format)
+      .with("csv", () => get().importCSV(fileName, options))
+      .with("json", () => get().importJSON(fileName, options))
+      .with("parquet", () => get().importParquet(fileName, options))
+      .with("excel", () => get().importExcel(fileName, options))
+      .otherwise(() => {
         throw new DuckDBError(`Unsupported file format: ${options.format}`);
-    }
+      });
   },
 
   importCSV: async (fileName: string, options: ImportOptions): Promise<void> => {
@@ -256,23 +272,28 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
       name: options.tableName,
       delimiter: options.delimiter,
       header: options.header,
-      detect: options.autoDetect,
+      detect: true,
       dateFormat: "auto",
     });
   },
 
-  buildJSONImportQuery: (fileName: string, options: ImportOptions): string => {
+  importJSON: async (fileName: string, options: ImportOptions): Promise<void> => {
+    const { conn } = get();
+    if (!conn) {
+      throw new DuckDBError("DuckDB is not ready yet.");
+    }
+
     const jsonOptions = [];
     if (options.jsonFormat && options.jsonFormat !== "auto") {
       jsonOptions.push(`format='${options.jsonFormat}'`);
     }
 
-    const optionsString = jsonOptions.length > 0 ? `(${jsonOptions.join(", ")})` : "";
+    const optionsString = jsonOptions.length > 0 ? `, ${jsonOptions.join(", ")}` : "";
 
-    return `
+    await conn.query(`
       CREATE TABLE ${options.tableName} AS 
-      SELECT * FROM read_json('${fileName}'${optionsString})
-    `;
+      SELECT * FROM read_json('${fileName}'${optionsString});
+    `);
   },
 
   importParquet: async (fileName: string, options: ImportOptions): Promise<void> => {
@@ -287,14 +308,54 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
     `);
   },
 
-  buildArrowImportQuery: (fileName: string, options: ImportOptions): string => {
-    // For Arrow files, we'll use the read_parquet function as a placeholder
-    // since DuckDB doesn't have a direct read_arrow function
-    // In a real implementation, you might need to convert Arrow to Parquet first
-    return `
-      CREATE TABLE ${options.tableName} AS 
-      SELECT * FROM read_parquet('${fileName}')
-    `;
+  importExcel: async (fileName: string, options: ImportOptions): Promise<void> => {
+    throw new DuckDBError("Excel import is not supported.");
+
+    // await conn.query(`
+    //   CREATE TABLE ${options.tableName} AS (SELECT * FROM read_xlsx('${fileName}'${buildOptions()}));
+    // `);
+
+    // the above doesn't seem to work, even with the excel extension installed.
+    // not sure if DuckDB WASM supports excel import the same as on other platforms.
+    // Maybe convert the excel file to csv first?
+  },
+
+  exportTable: async (tableName: string, format: "csv" | "parquet" | "json"): Promise<string> => {
+    const runQuery = get().runQuery;
+
+    const fileName = `table_${tableName}_${nanoid()}.${format}`;
+
+    await runQuery(`COPY ${tableName} TO '${fileName}';`);
+
+    const buffer = await get().db?.copyFileToBuffer(fileName);
+
+    if (!buffer) {
+      throw new DuckDBError("Failed to export table.");
+    }
+
+    return URL.createObjectURL(new Blob([buffer]));
+  },
+
+  exportResults: async (queryResult: QueryResult, format: "csv" | "parquet"): Promise<string> => {
+    const runQuery = get().runQuery;
+
+    const { query } = queryResult;
+
+    // Remove any trailing semicolon
+    const strippedQuery = query.replace(/;\s*$/, "");
+    // If there are multiple statements just execute the last one
+    const lastQuery = strippedQuery.split(";").pop()?.trim();
+    const fileName = `results_${nanoid()}.${format}`;
+
+    await runQuery(`COPY (${lastQuery}) TO '${fileName}' (FORMAT ${format})`);
+
+    const buffer = await get().db?.copyFileToBuffer(fileName);
+
+    if (!buffer) {
+      throw new DuckDBError("Failed to export results.");
+    }
+
+    return URL.createObjectURL(new Blob([buffer]));
   },
 
   reset: async () => {
@@ -308,6 +369,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
 
     // Re-establish the connection
     const connection = await db.connect();
+
     set({
       conn: connection,
       memoryUsage: null,
@@ -326,6 +388,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
     }
 
     await cleanupDuckDB().catch(console.error);
+
     set({
       db: null,
       conn: null,

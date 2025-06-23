@@ -87,7 +87,7 @@ const isNumberType = (type: arrow.DataType) =>
     )
     .otherwise(() => false);
 
-export function ArrowTable({
+export function QueryResultTable({
   data,
   className,
   ...props
@@ -137,8 +137,8 @@ export function ArrowTable({
                     <TooltipPrimitive.Root>
                       <TooltipTrigger>
                         <div className={`flex items-center gap-1.5`}>
-                          {dataType && getDataTypeIcon(dataType)}
                           {column}
+                          {dataType && getDataTypeIcon(dataType)}
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
