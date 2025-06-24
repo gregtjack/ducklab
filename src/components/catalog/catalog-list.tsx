@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DatabaseIcon, RefreshCcw, FilePlus2, Loader2 } from "lucide-react";
+import { DatabaseIcon, RefreshCcw, FilePlus2 } from "lucide-react";
 import { useCatalogStore, Dataset } from "@/store/catalog-store";
 import { Button } from "../ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";

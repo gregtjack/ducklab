@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useNotebookStore } from "@/store/notebook-store";
-import { Plus, Notebook, FileSpreadsheetIcon, PlusIcon, Settings2 } from "lucide-react";
+import { Plus, Notebook, FileSpreadsheetIcon, PlusIcon } from "lucide-react";
 import { FileUpload } from "@/components/catalog/file-upload";
 
 export const Route = createFileRoute("/")({

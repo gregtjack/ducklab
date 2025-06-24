@@ -2,13 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Dataset, useCatalogStore } from "@/store/catalog-store";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,7 +32,6 @@ import {
   TableIcon,
   DownloadIcon,
 } from "lucide-react";
-import prettyBytes from "pretty-bytes";
 import { Button } from "../ui/button";
 import { useDuckDBStore } from "@/store/duckdb-store";
 import { Separator } from "../ui/separator";

@@ -13,10 +13,20 @@ export default tseslint.config(
     },
     rules: {
       "no-unused-vars": "warn",
-      "no-unused-imports": "warn",
     },
   },
   {
-    ignores: ["node_modules", ".tanstack", ".output", ".nitro", "dist", "build", "public", "public/**", "dist/**", "build/**"],
+    ignores: [
+      "node_modules",
+      ".tanstack",
+      ".output",
+      ".nitro",
+      "dist",
+      "build",
+      "public",
+      "public/**",
+      "dist/**",
+      "build/**",
+    ],
   },
 );

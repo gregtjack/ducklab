@@ -1,21 +1,23 @@
-# DuckLab
+# DuckPad
 
-DuckLab is an in-browser data analytics toolkit built on top of DuckDB and WebAssembly. It provides a modern notebook-style interface for data analysis, exploration, and file conversion capabilities.
+DuckPad is an in-browser data analytics toolkit built on top of DuckDB and WebAssembly. It features a modern notebook-style interface and file conversion capabilities.
+
+Future work:
+
+- Excel file import/export support
+- Data visualization (Vega?)
+- Some kind of optional cloud save functionality
 
 ## Getting started
 
 ### Prerequisites
 
 - [Bun](https://bun.sh)
+- Optionally, Node.js 18+
 
 ### Installation
 
-1. Clone the repository:
-
-```bash
-git clone <repo link>
-cd ducklab
-```
+1. Clone the repository
 
 2. Install dependencies:
 
@@ -31,4 +33,4 @@ bun dev
 
 ## Acknowledgments
 
-I want to give shout-outs to [DataKit](https://datakit.page), [TabLab](https://tablab.com) [MotherDuck](https://motherduck.com) for being the inspiration for this project.
+I want to shout-out [DataKit](https://datakit.page), [TabLab](https://tablab.com), and [MotherDuck](https://motherduck.com) for inspiring this project.

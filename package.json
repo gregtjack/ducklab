@@ -1,7 +1,7 @@
 {
-  "name": "tanstack-start-example-basic",
-  "private": true,
-  "sideEffects": false,
+  "name": "duckpad",
+  "version": "0.0.1",
+  "description": "DuckPad is a web-based interactive data analysis tool powered by DuckDB.",
   "type": "module",
   "scripts": {
     "dev": "vite dev",
@@ -10,7 +10,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
-    "lint:fix": "eslint --fix ."
+    "lint:fix": "eslint --fix .",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.29.1-dev132.0",

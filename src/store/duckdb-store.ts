@@ -471,7 +471,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
     }
   },
 
-  importExcel: async (fileName: string, options: ImportOptions): Promise<void> => {
+  importExcel: async (fileName: string): Promise<void> => {
     throw new DuckDBImportError("Excel import is not supported in DuckDB WASM", "excel", fileName);
   },
 

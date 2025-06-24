@@ -6,8 +6,6 @@ import { DownloadIcon, Loader2, Maximize2, Minimize2 } from "lucide-react";
 import { useState } from "react";
 import { type QueryResult } from "@/lib/types/query-result";
 import { useDuckDBStore } from "@/store/duckdb-store";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Button } from "../ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
