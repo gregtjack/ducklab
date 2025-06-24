@@ -6,10 +6,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
-import { Upload, Loader2, ImportIcon } from "lucide-react";
+import {
+  Upload,
+  ImportIcon,
+  FileText,
+  Link,
+  Settings,
+  Database,
+  ChevronDown,
+  ChevronUp,
+  FileSpreadsheet,
+  X,
+} from "lucide-react";
 import { useDuckDBStore } from "@/store/duckdb-store";
 import { type ImportOptions, type FileFormat, fileFormats } from "@/lib/types/fs";
 import { useCatalogStore } from "@/store/catalog-store";
@@ -21,17 +38,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import prettyBytes from "pretty-bytes";
 
 type FileUploadProps = React.PropsWithChildren;
 
-const JSON_FORMATS = [
+const JSONFormats = [
   { value: "auto", label: "Auto-detect" },
   { value: "newline_delimited", label: "Newline Delimited" },
   { value: "records", label: "Records" },
 ];
 
 const inferTableName = (fileName: string): string => {
-  // Remove file extension
   const nameWithoutExt = fileName.replace(/\.[^/.]+$/, "");
 
   let tableName = nameWithoutExt
@@ -44,7 +61,6 @@ const inferTableName = (fileName: string): string => {
     tableName = "table_" + tableName;
   }
 
-  // Fallback if empty
   if (!tableName) {
     tableName = "imported_data";
   }
@@ -54,13 +70,11 @@ const inferTableName = (fileName: string): string => {
 
 export function FileUpload({ children }: FileUploadProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [tableName, setTableName] = useState("");
   const [selectedFormat, setSelectedFormat] = useState<FileFormat>("csv");
   const [url, setUrl] = useState("");
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
 
-  // File import options
   const [importOptions, setImportOptions] = useState<ImportOptions>({
     delimiter: ",",
     tableName: "default",
@@ -75,11 +89,6 @@ export function FileUpload({ children }: FileUploadProps) {
 
   const { importFile, importFromURL } = useDuckDBStore();
   const { refreshDatasets } = useCatalogStore();
-
-  const getAcceptedFileTypes = () => {
-    const format = fileFormats.find(f => f.value === selectedFormat);
-    return format ? format.extensions : [];
-  };
 
   const getImportOptions = () => {
     return {
@@ -116,55 +125,34 @@ export function FileUpload({ children }: FileUploadProps) {
       return;
     }
 
-    await performImport();
-  };
+    setIsOpen(false);
+    resetForm();
 
-  const performImport = async () => {
-    setIsUploading(true);
-    setUploadProgress(0);
+    const options: ImportOptions = getImportOptions();
 
-    try {
-      // Simulate progress
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + 10;
-        });
-      }, 100);
+    toast.promise(
+      async () => {
+        if (file) {
+          await importFile(file, options);
+        } else {
+          await importFromURL(url.trim(), options);
+        }
 
-      const options: ImportOptions = getImportOptions();
-
-      if (file) {
-        await importFile(file, options);
-      } else {
-        await importFromURL(url.trim(), options);
-      }
-
-      toast.success(
-        <span>
-          Successfully imported file as table <span className="font-mono">{tableName}</span>
-        </span>,
-      );
-
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-
-      // Refresh the catalog to show the new table
-      refreshDatasets();
-
-      // Reset form
-      resetForm();
-      setIsOpen(false);
-    } catch (error) {
-      const errorMessage = file ? "Failed to import file" : "Failed to import from URL";
-      toast.error(error instanceof Error ? error.message : errorMessage);
-    } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
-    }
+        refreshDatasets();
+      },
+      {
+        loading: `Importing ${file ? file.name : "data"} as table "${tableName}"...`,
+        success: (
+          <span>
+            Successfully imported as table <span className="font-mono">{tableName}</span>
+          </span>
+        ),
+        error: error => {
+          const errorMessage = file ? "Failed to import file" : "Failed to import from URL";
+          return error instanceof Error ? error.message : errorMessage;
+        },
+      },
+    );
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -177,7 +165,7 @@ export function FileUpload({ children }: FileUploadProps) {
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
     },
     multiple: false,
-    disabled: isUploading,
+    disabled: false,
   });
 
   const resetForm = () => {
@@ -185,6 +173,7 @@ export function FileUpload({ children }: FileUploadProps) {
     setSelectedFormat("csv");
     setUrl("");
     setFile(null);
+    setShowAdvancedOptions(false);
     setImportOptions({
       delimiter: ",",
       tableName: "default",
@@ -194,122 +183,180 @@ export function FileUpload({ children }: FileUploadProps) {
     });
   };
 
+  const removeFile = () => {
+    setFile(null);
+    setTableName("");
+    setSelectedFormat("csv");
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">Create a table</DialogTitle>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="space-y-3">
+          <DialogTitle className="flex items-center gap-3 text-lg">
+            <Database className="h-6 w-6 text-primary" />
+            Create a new table
+          </DialogTitle>
           <DialogDescription>
-            Import a file from your computer or via URL to create a new table in DuckDB.
+            Import data from a file or URL to create a new table in your database.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* File upload */}
+        <div className="space-y-4">
           <div className="space-y-4">
-            <h4 className="text-sm font-medium">Open file</h4>
-            <div
-              {...getRootProps()}
-              className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${isDragActive
-                ? "border-primary bg-primary/5"
-                : "border-muted-foreground/25 hover:border-primary/50"
-                } ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              <input {...getInputProps()} />
-              <Upload className="mx-auto size-8 text-muted-foreground mb-2" />
-              {file ? (
-                <p className="text-sm">{file.name}</p>
-              ) : isDragActive ? (
-                <p className="text-sm">Drop the {selectedFormat.toUpperCase()} file here...</p>
-              ) : (
-                <div>
-                  <p className="text-sm font-medium mb-1">
-                    Drag and drop any {fileFormats.map(f => f.label).join(", ")} file here
-                  </p>
-                  <p className="text-xs text-muted-foreground">or click to browse</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Supported: {getAcceptedFileTypes().join(", ")}
-                  </p>
-                </div>
-              )}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                Upload File
+              </Label>
+              <div
+                {...getRootProps()}
+                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all duration-200 ${
+                  isDragActive
+                    ? "border-primary bg-primary/5 scale-[1.02]"
+                    : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30"
+                }`}
+              >
+                <input {...getInputProps()} />
+                <Upload className="mx-auto size-10 text-muted-foreground mb-3" />
+                {file ? (
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{file.name}</p>
+                        <p className="text-xs text-muted-foreground">{prettyBytes(file.size)}</p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={e => {
+                          e.stopPropagation();
+                          removeFile();
+                        }}
+                        className="ml-2 h-8 w-8 p-0 hover:bg-destructive hover:bg-muted"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : isDragActive ? (
+                  <p className="text-sm font-medium">Drop the file here...</p>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Drag and drop a file here</p>
+                    <p className="text-xs text-muted-foreground">or click to browse</p>
+                    <div className="flex flex-wrap justify-center gap-1 mt-2">
+                      {fileFormats.map(f => (
+                        <span
+                          key={f.value}
+                          className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-muted text-muted-foreground"
+                        >
+                          {f.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-          {/* URL Import */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium">Or import from a public URL</h4>
 
-            <div className="flex gap-2">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">or</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Link className="h-4 w-4" />
+                Import from public URL
+              </Label>
               <Input
                 value={url}
                 onChange={e => setUrl(e.target.value)}
                 placeholder={`https://example.com/data.${selectedFormat}`}
-                disabled={isUploading}
+                className="h-10"
               />
             </div>
-          </div>
-          {/* Table Name */}
-          <div className="space-y-2">
-            <Label htmlFor="tableName">Table Name</Label>
-            <div className="relative">
-              <Input
-                id="tableName"
-                value={tableName}
-                onChange={e => setTableName(e.target.value)}
-                placeholder="Enter table name"
-                disabled={isUploading}
-              />
-            </div>
-            {file && (
-              <p className="text-xs text-muted-foreground">
-                Table name inferred from file name. You can modify it if needed.
-              </p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="format">File Format</Label>
-            <Select
-              value={selectedFormat}
-              onValueChange={(value: FileFormat) => setSelectedFormat(value)}
-              disabled={isUploading}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {fileFormats.map(format => (
-                  <SelectItem key={format.value} value={format.value}>
-                    {format.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {/* Format-specific import options */}
-          <div className="space-y-4">
-            <FileOptions
-              selectedFormat={selectedFormat}
-              options={importOptions}
-              setOptions={setImportOptions}
-              isUploading={isUploading}
-            />
           </div>
 
-          <Button onClick={handleSubmit} disabled={isUploading} className="w-full">
-            Import
-            {isUploading ? <Loader2 className="animate-spin" /> : <ImportIcon />}
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="tableName" className="text-sm font-medium">
+                  Table Name
+                </Label>
+                <Input
+                  id="tableName"
+                  value={tableName}
+                  onChange={e => setTableName(e.target.value)}
+                  placeholder="Enter table name"
+                  className="h-9"
+                />
+                {file && (
+                  <p className="text-xs text-muted-foreground">Auto-generated from filename</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="format" className="text-sm font-medium">
+                  File Format
+                </Label>
+                <Select
+                  value={selectedFormat}
+                  onValueChange={(value: FileFormat) => setSelectedFormat(value)}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {fileFormats.map(format => (
+                      <SelectItem key={format.value} value={format.value}>
+                        {format.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+            className="p-2"
+            size="sm"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">More options</span>
+            </div>
+            {showAdvancedOptions ? (
+              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            )}
           </Button>
 
-          {/* Progress */}
-          {isUploading && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Importing...</span>
-                <span>{uploadProgress}%</span>
-              </div>
-              <Progress value={uploadProgress} />
+          {showAdvancedOptions && (
+            <div className="space-y-3 p-4 bg-muted/30 rounded-lg border">
+              <FileOptions
+                selectedFormat={selectedFormat}
+                options={importOptions}
+                setOptions={setImportOptions}
+              />
             </div>
           )}
+
+          <Button onClick={handleSubmit} className="w-full h-11 text-base font-medium">
+            <ImportIcon className="mr-2 h-4 w-4" />
+            Import Data
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -320,90 +367,94 @@ function FileOptions({
   selectedFormat,
   options,
   setOptions,
-  isUploading,
 }: {
   selectedFormat: FileFormat;
   options: ImportOptions;
   setOptions: (options: ImportOptions) => void;
-  isUploading: boolean;
 }) {
-  switch (selectedFormat) {
-    case "csv":
-      return (
-        <div className="space-y-4 bg-muted rounded-md p-4">
-          <h4 className="text-sm font-medium">CSV Import Options</h4>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 justify-between">
-              <Label htmlFor="delimiter">Delimiter</Label>
+  if (selectedFormat === "parquet") {
+    return <div>No options available for Parquet</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Settings className="h-4 w-4 text-muted-foreground" />
+        <h3 className="text-base font-medium">Import Options</h3>
+      </div>
+
+      {selectedFormat === "csv" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="delimiter" className="text-sm font-medium">
+                Delimiter
+              </Label>
               <Input
                 id="delimiter"
                 value={options.delimiter}
                 onChange={e => setOptions({ ...options, delimiter: e.target.value })}
                 placeholder=","
-                disabled={isUploading}
-                className="max-w-32"
+                className="h-9"
               />
             </div>
 
-            <div className="flex items-center gap-2 justify-between">
-              <Label htmlFor="sampleSize">Sample Size</Label>
+            <div className="space-y-2">
+              <Label htmlFor="sampleSize" className="text-sm font-medium">
+                Sample Size
+              </Label>
               <Input
                 id="sampleSize"
                 type="number"
                 value={options.sampleSize}
                 onChange={e => setOptions({ ...options, sampleSize: Number(e.target.value) })}
-                disabled={isUploading}
-                className="max-w-32"
+                className="h-9"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-2 justify-between">
-            <Label htmlFor="hasHeader">Has header row</Label>
+          <div className="flex items-center justify-between p-3 bg-background rounded-lg border">
+            <div className="space-y-1">
+              <Label htmlFor="hasHeader" className="text-sm font-medium">
+                Has header row
+              </Label>
+              <p className="text-xs text-muted-foreground">First row contains column names</p>
+            </div>
             <Switch
               id="hasHeader"
               checked={options.header}
               onCheckedChange={() => setOptions({ ...options, header: !options.header })}
-              disabled={isUploading}
             />
           </div>
         </div>
-      );
+      )}
 
-    case "json":
-      return (
-        <div className="space-y-4 bg-muted rounded-md p-4">
-          <h4 className="text-sm font-medium">JSON Import Options</h4>
+      {selectedFormat === "json" && (
+        <div className="space-y-4">
           <div className="space-y-2">
-            <div className="flex items-center gap-2 justify-between">
-              <Label htmlFor="jsonFormat">Format</Label>
-              <Select
-                value={options.jsonFormat}
-                onValueChange={(value: "auto" | "newline_delimited" | "records") =>
-                  setOptions({ ...options, jsonFormat: value })
-                }
-                disabled={isUploading}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {JSON_FORMATS.map(format => (
-                    <SelectItem key={format.value} value={format.value}>
-                      {format.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Label htmlFor="jsonFormat" className="text-sm font-medium">
+              JSON Format
+            </Label>
+            <Select
+              value={options.jsonFormat}
+              onValueChange={(value: "auto" | "newline_delimited" | "records") =>
+                setOptions({ ...options, jsonFormat: value })
+              }
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {JSONFormats.map(format => (
+                  <SelectItem key={format.value} value={format.value}>
+                    {format.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
-      );
-
-    case "parquet":
-      return null;
-
-    default:
-      return null;
-  }
+      )}
+    </div>
+  );
 }

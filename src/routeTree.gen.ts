@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as LandingRouteImport } from './routes/landing'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as NotebookIdRouteImport } from './routes/notebook.$id'
@@ -18,11 +17,6 @@ import { Route as NotebookIdRouteImport } from './routes/notebook.$id'
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LandingRoute = LandingRouteImport.update({
-  id: '/landing',
-  path: '/landing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -44,14 +38,12 @@ const NotebookIdRoute = NotebookIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/landing': typeof LandingRoute
   '/settings': typeof SettingsRoute
   '/notebook/$id': typeof NotebookIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/landing': typeof LandingRoute
   '/settings': typeof SettingsRoute
   '/notebook/$id': typeof NotebookIdRoute
 }
@@ -59,22 +51,20 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/landing': typeof LandingRoute
   '/settings': typeof SettingsRoute
   '/notebook/$id': typeof NotebookIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/landing' | '/settings' | '/notebook/$id'
+  fullPaths: '/' | '/about' | '/settings' | '/notebook/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/landing' | '/settings' | '/notebook/$id'
-  id: '__root__' | '/' | '/about' | '/landing' | '/settings' | '/notebook/$id'
+  to: '/' | '/about' | '/settings' | '/notebook/$id'
+  id: '__root__' | '/' | '/about' | '/settings' | '/notebook/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
-  LandingRoute: typeof LandingRoute
   SettingsRoute: typeof SettingsRoute
   NotebookIdRoute: typeof NotebookIdRoute
 }
@@ -86,13 +76,6 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/landing': {
-      id: '/landing'
-      path: '/landing'
-      fullPath: '/landing'
-      preLoaderRoute: typeof LandingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -122,7 +105,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
-  LandingRoute: LandingRoute,
   SettingsRoute: SettingsRoute,
   NotebookIdRoute: NotebookIdRoute,
 }

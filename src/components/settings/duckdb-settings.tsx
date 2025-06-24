@@ -15,8 +15,16 @@ import prettyBytes from "pretty-bytes";
 import { useEffect, useState } from "react";
 
 export function DuckDBSettings() {
-  const { isLoading, error, errorHistory, memoryUsage, reset, updateMemoryUsage, conn, waitForReady } =
-    useDuckDBStore();
+  const {
+    isLoading,
+    error,
+    errorHistory,
+    memoryUsage,
+    reset,
+    updateMemoryUsage,
+    conn,
+    waitForReady,
+  } = useDuckDBStore();
 
   const [loadingVersion, setLoadingVersion] = useState(false);
   const [version, setVersion] = useState<string | null>(null);
@@ -55,18 +63,15 @@ export function DuckDBSettings() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold">DuckDB</h3>
+      <div className="flex items-center gap-2">
+        <h3 className="text-lg font-semibold">DuckDB Settings</h3>
       </div>
 
       {/* Status Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Database className="h-5 w-5" />
-            Database Status
-          </CardTitle>
-          <CardDescription>Current status and health of your DuckDB instance</CardDescription>
+          <CardTitle className="flex items-center gap-2">Database Status</CardTitle>
+          <CardDescription>Current status and health of DuckDB</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
@@ -94,8 +99,8 @@ export function DuckDBSettings() {
           {error && (
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-destructive" />
-                <span className="font-medium text-destructive">Current Error</span>
+                <AlertTriangle className="size-4 text-destructive" />
+                <span className="font-medium text-destructive">Recent error</span>
               </div>
               <p className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
                 {error.message}
@@ -112,7 +117,10 @@ export function DuckDBSettings() {
               </div>
               <div className="space-y-1 max-h-32 overflow-y-auto">
                 {errorHistory.map((err, i) => (
-                  <p key={i} className="text-sm text-destructive bg-destructive/10 p-2 rounded">
+                  <p
+                    key={i}
+                    className="text-sm text-destructive bg-destructive/5 px-2 py-1 rounded text-wrap"
+                  >
                     {err.message}
                   </p>
                 ))}
@@ -126,7 +134,7 @@ export function DuckDBSettings() {
       <Card>
         <CardHeader>
           <CardTitle>Database Actions</CardTitle>
-          <CardDescription>Manage your DuckDB instance</CardDescription>
+          <CardDescription>Manage DuckDB</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">

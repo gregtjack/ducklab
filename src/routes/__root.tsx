@@ -23,8 +23,8 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1",
       },
       ...seo({
-        title: "DuckLab | DuckDB in your browser",
-        description: `DuckLab is a web-based interactive data analysis tool.`,
+        title: "DuckPad | Local-first data analytics",
+        description: `DuckPad is a web-based interactive data analysis tool powered by DuckDB.`,
       }),
     ],
     links: [

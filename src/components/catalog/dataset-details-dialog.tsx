@@ -2,7 +2,23 @@
 
 import { useState, useEffect } from "react";
 import { Dataset, useCatalogStore } from "@/store/catalog-store";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -82,13 +98,19 @@ export function DatasetDetailsDialog({ dataset, isOpen, onClose }: DatasetDetail
   const [schema, setSchema] = useState<SchemaColumn[]>([]);
   const [isLoadingSchema, setIsLoadingSchema] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
   const handleDelete = async () => {
     if (!dataset?.id) return;
     setIsDeleting(true);
     await removeDataset(dataset?.id);
     setIsDeleting(false);
+    setShowDeleteConfirmation(false);
     onClose();
+  };
+
+  const handleDeleteClick = () => {
+    setShowDeleteConfirmation(true);
   };
 
   const handleExport = async (format: "csv" | "parquet" | "json") => {
@@ -120,15 +142,13 @@ export function DatasetDetailsDialog({ dataset, isOpen, onClose }: DatasetDetail
             <TableIcon className="size-5" />
             {dataset.name}
           </DialogTitle>
-
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Basic Information */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <h4 className="text-sm font-medium text-muted-foreground">Table Name</h4>
-              <p className="text-sm font-mono">{dataset.tableName}</p>
+              <p className="text-sm font-mono truncate">{dataset.tableName}</p>
             </div>
             <div className="space-y-2">
               <h4 className="text-sm font-medium text-muted-foreground">Location</h4>
@@ -155,17 +175,17 @@ export function DatasetDetailsDialog({ dataset, isOpen, onClose }: DatasetDetail
             <div className="space-y-2">
               <h4 className="text-sm font-medium text-muted-foreground">Access</h4>
               <span
-                className={`inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${dataset.isInsertable
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-secondary-foreground"
-                  }`}
+                className={`inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+                  dataset.isInsertable
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-secondary-foreground"
+                }`}
               >
                 {dataset.isInsertable ? "Insertable" : "Read-only"}
               </span>
             </div>
           </div>
 
-          {/* Schema Information */}
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-muted-foreground">Schema</h4>
             {isLoadingSchema ? (
@@ -193,10 +213,11 @@ export function DatasetDetailsDialog({ dataset, isOpen, onClose }: DatasetDetail
                         <TableCell className="font-mono text-sm">{column.dataType}</TableCell>
                         <TableCell>
                           <span
-                            className={`inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${column.isNullable === "YES"
-                              ? "border bg-background"
-                              : "bg-secondary text-secondary-foreground"
-                              }`}
+                            className={`inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+                              column.isNullable === "YES"
+                                ? "border bg-background"
+                                : "bg-secondary text-secondary-foreground"
+                            }`}
                           >
                             {column.isNullable === "YES" ? "NULL" : "NOT NULL"}
                           </span>
@@ -215,25 +236,51 @@ export function DatasetDetailsDialog({ dataset, isOpen, onClose }: DatasetDetail
               </div>
             )}
 
-
             <div className="space-y-2 mt-4">
               <h4 className="text-sm font-medium text-muted-foreground">Export</h4>
               <div className="flex items-center gap-2 mt-2">
-                <Button variant="secondary" onClick={() => handleExport("csv")}>Export to CSV<DownloadIcon /></Button>
-                <Button variant="secondary" onClick={() => handleExport("parquet")}>Export to Parquet<DownloadIcon /></Button>
-                <Button variant="secondary" onClick={() => handleExport("json")}>Export to JSON<DownloadIcon /></Button>
+                <Button variant="secondary" onClick={() => handleExport("csv")}>
+                  Export to CSV
+                  <DownloadIcon />
+                </Button>
+                <Button variant="secondary" onClick={() => handleExport("parquet")}>
+                  Export to Parquet
+                  <DownloadIcon />
+                </Button>
+                <Button variant="secondary" onClick={() => handleExport("json")}>
+                  Export to JSON
+                  <DownloadIcon />
+                </Button>
               </div>
-              <span className="text-xs text-muted-foreground">Note: large tables may take a while to export, and in some cases will cause DuckDB to OOM.</span>
+              <span className="text-xs text-muted-foreground">
+                Note: large tables may take a while to export, and in some cases will cause DuckDB
+                to OOM.
+              </span>
             </div>
-
             <Separator />
-
-            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+            <Button variant="destructive" onClick={handleDeleteClick} disabled={isDeleting}>
               Delete
             </Button>
           </div>
         </div>
       </DialogContent>
+
+      <AlertDialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove the dataset "{dataset?.name}"?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

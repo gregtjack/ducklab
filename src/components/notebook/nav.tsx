@@ -51,11 +51,6 @@ export function NotebookList() {
           <div className="flex flex-col items-center justify-center w-full p-4">
             <NotebookIcon className="size-10 text-muted-foreground my-4" />
             <h3 className="text-lg text-muted-foreground font-medium mb-2">No notebooks</h3>
-            {/* <p className="text-sm text-muted-foreground mb-4">Create a notebook to get started</p>
-            <Button size="sm" onClick={handleCreateNotebook}>
-              <PlusIcon className="size-4" />
-              Create notebook
-            </Button> */}
           </div>
         </div>
       ) : (
@@ -68,7 +63,7 @@ export function NotebookList() {
                 to="/notebook/$id"
                 params={{ id: notebook.id }}
                 activeProps={{ className: "bg-primary/10 border border-primary/20" }}
-                className={`w-full flex items-center justify-between p-2 transition-all rounded-lg h-9 hover:bg-primary/15 cursor-pointer hover:text-accent-foreground`}
+                className={`w-full flex items-center justify-between p-2 rounded-lg h-9 hover:bg-primary/15 cursor-pointer hover:text-accent-foreground`}
               >
                 <div className="flex items-center gap-2 truncate">
                   <span className="text-lg">{notebook.icon}</span>

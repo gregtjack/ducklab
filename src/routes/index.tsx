@@ -25,18 +25,18 @@ function Home() {
     <div className="container mx-auto px-6 py-8 max-w-4xl">
       {/* Header */}
       <div className="mb-4">
-        <p className="text-lg font-medium">Welcome to DuckLab!</p>
+        <p className="text-lg font-medium">Welcome to DuckPad!</p>
         <p className="text-sm text-muted-foreground">Choose a quick action to get started</p>
       </div>
 
       {/* Quick Actions */}
       <div className="mb-8 flex gap-2">
-        <Button onClick={handleCreateNotebook} className="w-full sm:w-auto">
+        <Button variant="outline" onClick={handleCreateNotebook} className="w-full sm:w-auto">
           <PlusIcon />
           Create notebook
         </Button>
         <FileUpload>
-          <Button className="w-full sm:w-auto">
+          <Button variant="outline" className="w-full sm:w-auto">
             <FileSpreadsheetIcon />
             Import data
           </Button>

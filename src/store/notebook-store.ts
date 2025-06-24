@@ -1,44 +1,17 @@
 import { create } from "zustand";
-import { QueryResult } from "./duckdb-store";
 import { persist, StorageValue } from "zustand/middleware";
 import superjson from "superjson";
 import { genUniqueId } from "@/lib/utils";
+import { Cell, Notebook } from "@/lib/types/notebook";
 
 const randomDemoQueries = [
-  "SELECT 1 as number",
+  "SELECT 1",
   "SELECT * FROM generate_series(1, 5) as numbers",
   "SELECT current_timestamp as now",
   "SELECT pi() as pi",
   "SELECT uuid() as unique_id",
-  "SELECT concat('Hello', ' ', 'World!') as greeting",
-  "WITH RECURSIVE fibonacci(n, fib_n, next_fib) AS (SELECT 1, 1, 1 UNION ALL SELECT n + 1, next_fib, fib_n + next_fib FROM fibonacci WHERE n < 10) SELECT n, fib_n as fibonacci_number FROM fibonacci",
+  "SELECT concat('Welcome', ' ', 'to', ' ', 'DuckLab!') as greeting",
 ];
-
-export interface DataSource {
-  id: string;
-  name: string;
-  type: "local" | "remote";
-  path: string;
-  file?: File;
-}
-
-export interface Cell {
-  id: string;
-  index: number;
-  query: string;
-  results: QueryResult | null;
-  error: string | null;
-  isLoading: boolean;
-}
-
-export interface Notebook {
-  id: string;
-  name: string;
-  icon: string;
-  cells: Cell[];
-  lastOpened: Date;
-  createdAt: Date;
-}
 
 const INITIAL_ICONS = ["🌊", "📊", "📈", "🔍", "📝", "💡", "🗂️", "📓", "🔮", "⚡️"];
 
@@ -59,7 +32,25 @@ interface NotebookState {
 export const useNotebookStore = create<NotebookState>()(
   persist(
     set => ({
-      notebooks: [],
+      notebooks: [
+        {
+          id: "1",
+          name: "Welcome",
+          icon: "🦆",
+          lastOpened: new Date(),
+          createdAt: new Date(),
+          cells: [
+            {
+              id: genUniqueId(),
+              index: 0,
+              query: randomDemoQueries[Math.floor(Math.random() * randomDemoQueries.length)],
+              error: null,
+              isLoading: false,
+              results: null,
+            },
+          ],
+        },
+      ],
       activeNotebookId: null,
       isLoading: true,
 

@@ -2,12 +2,20 @@
 
 import { QueryResultTable } from "./query-result-table";
 import prettyMs from "pretty-ms";
-import { DownloadIcon, Maximize2, Minimize2 } from "lucide-react";
+import { DownloadIcon, Loader2, Maximize2, Minimize2 } from "lucide-react";
 import { useState } from "react";
 import { type QueryResult } from "@/lib/types/query-result";
 import { useDuckDBStore } from "@/store/duckdb-store";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "../ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 
 interface QueryResultsProps {
   results: QueryResult | null;
@@ -21,8 +29,9 @@ export function QueryResults({ results, isLoading, error }: QueryResultsProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-gray-500">Loading results...</p>
+      <div className="flex items-center gap-2 text-sm text-muted-foreground justify-center h-full">
+        <Loader2 className="size-4 animate-spin" />
+        <p>Loading results...</p>
       </div>
     );
   }
@@ -43,7 +52,7 @@ export function QueryResults({ results, isLoading, error }: QueryResultsProps) {
     );
   }
 
-  const handleOnExport = async (format: "csv" | "parquet") => {
+  const handleOnExport = async (format: "csv" | "parquet" | "json") => {
     const url = await exportResults(results, format);
     const a = document.createElement("a");
     a.href = url;
@@ -54,25 +63,29 @@ export function QueryResults({ results, isLoading, error }: QueryResultsProps) {
   return (
     <div className={`flex flex-col h-full ${isFullscreen ? "fixed inset-0 z-30 bg-card" : ""}`}>
       <div className="h-12 text-muted-foreground flex px-2 items-center bg-card justify-between border-b">
-        <h3 className="text-xs uppercase">Query Results</h3>
+        <h3 className="text-xs font-medium">Query results</h3>
         <div className="flex gap-2">
-          <Popover>
-            <PopoverTrigger asChild>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <button
                 className="p-1 hover:bg-accent rounded-sm flex items-center gap-1"
                 title="Export results"
               >
-                <span className="text-xs">Export As</span>
                 <DownloadIcon className="size-4" />
               </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-24 p-1">
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-fit p-1">
+              <DropdownMenuLabel>Export query results</DropdownMenuLabel>
+              <DropdownMenuSeparator />
               <div className="flex flex-col gap-1">
-                <Button variant="outline" className="w-full h-8 text-xs" onClick={() => handleOnExport("csv")}>CSV</Button>
-                <Button variant="outline" className="w-full h-8 text-xs" onClick={() => handleOnExport("parquet")}>Parquet</Button>
+                <DropdownMenuItem onClick={() => handleOnExport("csv")}>CSV</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleOnExport("parquet")}>
+                  Parquet
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleOnExport("json")}>JSON</DropdownMenuItem>
               </div>
-            </PopoverContent>
-          </Popover>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <button
             onClick={() => setIsFullscreen(!isFullscreen)}
@@ -86,8 +99,9 @@ export function QueryResults({ results, isLoading, error }: QueryResultsProps) {
       <QueryResultTable data={results.table} />
       <div className="border-t text-xs text-muted-foreground bg-card">
         <div className="flex items-center gap-1 p-1">
-          <span className="italic">
-            {results.table.numRows} row(s) in {prettyMs(results.duration, { compact: true })}
+          <span>
+            Returned {results.table.numRows} row(s) in{" "}
+            {prettyMs(results.duration, { compact: true })}
           </span>
         </div>
       </div>

@@ -9,6 +9,7 @@ import { FileUpload } from "./file-upload";
 import { DatasetDetailsDialog } from "./dataset-details-dialog";
 import prettyBytes from "pretty-bytes";
 import { format } from "d3-format";
+import { Skeleton } from "../ui/skeleton";
 
 function formatNumber(num: number | bigint): string {
   return num.toString();
@@ -37,11 +38,20 @@ export function CatalogList() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center h-full text-center">
-        <div className="flex flex-col items-center justify-center w-full p-4">
-          <Loader2 className="size-10 text-muted-foreground my-4 animate-spin" />
-          <p className="text-sm text-muted-foreground">Loading tables...</p>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-4 ml-auto" />
         </div>
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="flex items-center gap-3 p-3">
+            <Skeleton className="h-8 w-8" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
@@ -81,21 +91,17 @@ export function CatalogList() {
 
       <div className="flex-1 overflow-y-auto">
         {datasets.length === 0 ? (
-          <div className="flex flex-col items-center h-full text-center">
-            <div className="flex flex-col items-center justify-center w-full rounded-lg p-4 bg-primary/10">
-              <DatabaseIcon className="size-10 text-primary my-4" />
-              <h3 className="text-lg text-foreground font-medium mb-2">No tables</h3>
-              <p className="text-sm text-muted-foreground mb-2">Open a file to get started</p>
-              <p className="text-xs text-muted-foreground mb-4">
-                CSV, Parquet, JSON, and Excel files are supported
-              </p>
-              <FileUpload>
-                <Button size="sm">
-                  Open file
-                  <FilePlus2 />
-                </Button>
-              </FileUpload>
-            </div>
+          <div className="text-center">
+            <FileUpload>
+              <div className="hover:from-primary/15 hover:to-indigo-400/15 transition-colors hover:cursor-pointer flex flex-col items-center justify-center border border-primary/20 w-full rounded-lg p-4 bg-gradient-to-r from-primary/10 to-indigo-400/10">
+                <DatabaseIcon className="size-10 text-primary my-4" />
+                <h3 className="text-lg text-foreground font-medium mb-2">No tables</h3>
+                <p className="text-sm  mb-2">Open a file to get started</p>
+                <p className="text-xs text-muted-foreground mb-4">
+                  CSV, Parquet, and JSON files are supported
+                </p>
+              </div>
+            </FileUpload>
           </div>
         ) : (
           <div className="space-y-1">
