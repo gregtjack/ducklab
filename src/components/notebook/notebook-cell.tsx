@@ -193,8 +193,8 @@ function NotebookCell({ cellId, index }: NotebookCellProps) {
             >
               <QueryEditor
                 initialQuery={cell.query}
-                onQueryChange={(query: string) => {
-                  void updateCell(activeNotebook.id, cellId, { query });
+                onQueryChange={async (query: string) => {
+                  await updateCell(activeNotebook.id, cellId, { query });
                 }}
                 onFocus={() => setIsEditing(true)}
                 onBlur={() => setIsEditing(false)}

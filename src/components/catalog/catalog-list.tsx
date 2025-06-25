@@ -5,7 +5,7 @@ import { DatabaseIcon, RefreshCcw, FilePlus2 } from "lucide-react";
 import { useCatalogStore, Dataset } from "@/store/catalog-store";
 import { Button } from "../ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
-import { FileUpload } from "./file-upload";
+import { FileUpload } from "./file-import";
 import { DatasetDetailsDialog } from "./dataset-details-dialog";
 import prettyBytes from "pretty-bytes";
 import { format } from "d3-format";

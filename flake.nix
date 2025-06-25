@@ -1,5 +1,5 @@
 {
-  description = "Development environment for DuckLab";
+  description = "Development environment for DuckPad";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -14,15 +14,14 @@
       {
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            nodejs_22
             bun
+            nodejs_24
           ];
 
           shellHook = ''
-            echo "🚀 Welcome to DuckLab development environment"
-            echo "📦 Node.js version: $(node --version)"
-            echo "🐰 Bun version: $(bun --version)"
-            echo "📝 TypeScript version: $(tsc --version)"
+            echo "Welcome to DuckPad development environment"
+            echo "Node.js version: $(node --version)"
+            echo "Bun version: $(bun --version)"
           '';
         };
       }

@@ -23,9 +23,10 @@ import {
   ChevronDown,
   ChevronUp,
   X,
+  FileSpreadsheet,
 } from "lucide-react";
 import { useDuckDBStore } from "@/store/duckdb-store";
-import { type ImportOptions, type FileFormat, fileFormats } from "@/lib/types/fs";
+import { type ImportOptions, type FileFormat, fileFormats } from "@/lib/types/files";
 import { useCatalogStore } from "@/store/catalog-store";
 import {
   Dialog,
@@ -196,7 +197,8 @@ export function FileUpload({ children }: FileUploadProps) {
             Create a new table
           </DialogTitle>
           <DialogDescription>
-            Import data from a file or URL to create a new table in your database.
+            Import data from a file or URL to create a new table in your database. All data is
+            stored locally in your browser.
           </DialogDescription>
         </DialogHeader>
 
@@ -205,7 +207,7 @@ export function FileUpload({ children }: FileUploadProps) {
             <div className="space-y-2">
               <Label className="text-sm font-medium flex items-center gap-2">
                 <Upload className="h-4 w-4" />
-                Upload File
+                Open File
               </Label>
               <div
                 {...getRootProps()}
@@ -216,7 +218,7 @@ export function FileUpload({ children }: FileUploadProps) {
                 }`}
               >
                 <input {...getInputProps()} />
-                <Upload className="mx-auto size-10 text-muted-foreground mb-3" />
+                <FileSpreadsheet className="mx-auto size-10 text-muted-foreground mb-3" />
                 {file ? (
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
@@ -232,7 +234,7 @@ export function FileUpload({ children }: FileUploadProps) {
                           e.stopPropagation();
                           removeFile();
                         }}
-                        className="ml-2 h-8 w-8 p-0 hover:bg-destructive hover:bg-muted"
+                        className="ml-2 h-8 w-8 p-0 hover:bg-muted"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -295,9 +297,7 @@ export function FileUpload({ children }: FileUploadProps) {
                   placeholder="Enter table name"
                   className="h-9"
                 />
-                {file && (
-                  <p className="text-xs text-muted-foreground">Auto-generated from filename</p>
-                )}
+                {file && <p className="text-xs text-muted-foreground">Inferred from filename</p>}
               </div>
 
               <div className="space-y-2">

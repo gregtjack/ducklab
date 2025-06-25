@@ -5,14 +5,18 @@ import prettier from "eslint-config-prettier";
 export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
-  prettier,
+  {
+    plugins: {
+      prettier,
+    },
+  },
   {
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
     },
     rules: {
-      "no-unused-vars": "warn",
+      "no-unused-vars": "off",
     },
   },
   {
@@ -21,6 +25,7 @@ export default tseslint.config(
       ".tanstack",
       ".output",
       ".nitro",
+      ".vercel",
       "dist",
       "build",
       "public",

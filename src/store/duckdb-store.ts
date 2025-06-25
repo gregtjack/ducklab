@@ -1,60 +1,29 @@
 import { create } from "zustand";
 import * as duckdb from "@duckdb/duckdb-wasm";
 import { getDuckDB, cleanupDuckDB } from "../lib/duckdb";
-import { DuckDBError } from "@/lib/types/duckdb";
+import {
+  DuckDBConnectionError,
+  DuckDBQueryError,
+  DuckDBImportError,
+  DuckDBExportError,
+} from "@/lib/duckdb/errors";
 import * as arrow from "apache-arrow";
 import { match } from "ts-pattern";
 import { type QueryResult } from "@/lib/types/query-result";
-import { type ImportOptions } from "@/lib/types/fs";
+import { type ImportOptions } from "@/lib/types/files";
 import { nanoid } from "nanoid";
 
-class DuckDBConnectionError extends DuckDBError {
-  constructor(
-    message: string,
-    public readonly operation?: string,
-  ) {
-    super(`Connection error${operation ? ` during ${operation}` : ""}: ${message}`);
-    this.name = "DuckDBConnectionError";
-  }
-}
-
-class DuckDBQueryError extends DuckDBError {
-  constructor(
-    message: string,
-    public readonly query?: string,
-  ) {
-    super(
-      `Query error${query ? ` in query: ${query.substring(0, 100)}${query.length > 100 ? "..." : ""}` : ""}: ${message}`,
-    );
-    this.name = "DuckDBQueryError";
-  }
-}
-
-class DuckDBImportError extends DuckDBError {
-  constructor(
-    message: string,
-    public readonly format?: string,
-    public readonly fileName?: string,
-  ) {
-    super(
-      `Import error${format ? ` for ${format} format` : ""}${fileName ? ` from ${fileName}` : ""}: ${message}`,
-    );
-    this.name = "DuckDBImportError";
-  }
-}
-
-class DuckDBExportError extends DuckDBError {
-  constructor(
-    message: string,
-    public readonly format?: string,
-    public readonly tableName?: string,
-  ) {
-    super(
-      `Export error${format ? ` to ${format} format` : ""}${tableName ? ` from table ${tableName}` : ""}: ${message}`,
-    );
-    this.name = "DuckDBExportError";
-  }
-}
+const Log = {
+  info: (message: string) => {
+    console.log(`[DuckDBStore] ${message}`);
+  },
+  error: (message: string) => {
+    console.error(`[DuckDBStore] ${message}`);
+  },
+  warn: (message: string) => {
+    console.warn(`[DuckDBStore] ${message}`);
+  },
+};
 
 interface DuckDBState {
   db: duckdb.AsyncDuckDB | null;
@@ -113,7 +82,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
 
   initialize: async () => {
     try {
-      console.log("[DuckDB] Initializing...");
+      Log.info("Initializing...");
       const database = await getDuckDB();
       const connection = await database.connect();
 
@@ -122,13 +91,13 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
 
       const { updateMemoryUsage } = get();
       await updateMemoryUsage();
-      console.log("[DuckDB] Initialization completed successfully");
+      Log.info("Initialization completed successfully");
     } catch (err) {
       const error =
         err instanceof Error
           ? err
           : new DuckDBConnectionError("Failed to initialize DuckDB", "initialization");
-      console.error("[DuckDB] Initialization failed:", error);
+      Log.error(`Initialization failed: ${error.message}`);
       set({
         error,
         errorHistory: addErrorToHistory(error, get().errorHistory),
@@ -144,15 +113,15 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
     ensureDuckDBReady(db, conn, "extension installation");
 
     try {
-      console.log("[DuckDB] Installing extensions...");
+      Log.info("Installing extensions...");
       await conn!.query(`LOAD excel;`);
-      console.log("[DuckDB] Extensions installed successfully");
+      Log.info("Extensions installed successfully");
     } catch (err) {
       const error = new DuckDBConnectionError(
         err instanceof Error ? err.message : "Failed to install extensions",
         "extension installation",
       );
-      console.error("[DuckDB] Extension installation failed:", error);
+      Log.error(`Extension installation failed: ${error.message}`);
       set({
         error,
         errorHistory: addErrorToHistory(error, get().errorHistory),
@@ -169,7 +138,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
       return;
     }
 
-    console.log("[DuckDB] Waiting for DuckDB to be ready...");
+    Log.info("Waiting for DuckDB to be ready...");
 
     // Wait for DuckDB to be ready with a timeout
     return new Promise<void>((resolve, reject) => {
@@ -178,13 +147,13 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
           "Timeout waiting for DuckDB to be ready",
           "waiting",
         );
-        console.error("[DuckDB] Timeout waiting for DuckDB to be ready");
+        Log.warn("Timeout waiting for DuckDB to be ready");
         reject(error);
       }, 30000); // 30 second timeout
 
       const checkReady = () => {
         if (isDuckDBReady()) {
-          console.log("[DuckDB] DuckDB is now ready");
+          Log.info("DuckDB is now ready");
           clearTimeout(timeout);
           resolve();
         } else {
@@ -210,7 +179,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
       set({ memoryUsage: usage });
     } catch (err) {
       // Don't throw for memory usage errors, just log them
-      console.warn("[DuckDB] Failed to get memory usage:", err);
+      Log.error(`Failed to get memory usage: ${err}`);
     }
   },
 
@@ -254,7 +223,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
         err instanceof DuckDBQueryError
           ? err
           : new DuckDBQueryError(err instanceof Error ? err.message : "Failed to run query", query);
-      console.error("[DuckDB] Query execution failed:", error);
+      Log.error(`Query execution failed: ${error.message}`);
       set({
         error,
         errorHistory: addErrorToHistory(error, get().errorHistory),
@@ -269,14 +238,14 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
 
     try {
       await db!.registerFileHandle(name, file, duckdb.DuckDBDataProtocol.BROWSER_FILEREADER, true);
-      console.log(`[DuckDB] File registered successfully: ${name}`);
+      Log.info(`File registered successfully: ${name}`);
     } catch (err) {
       const error = new DuckDBImportError(
         err instanceof Error ? err.message : "Failed to register file",
         undefined,
         name,
       );
-      console.error("[DuckDB] File registration failed:", error);
+      Log.error(`File registration failed: ${error.message}`);
       set({
         error,
         errorHistory: addErrorToHistory(error, get().errorHistory),
@@ -291,14 +260,14 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
 
     try {
       await db!.registerFileURL(name, url, duckdb.DuckDBDataProtocol.HTTP, false);
-      console.log(`[DuckDB] URL registered successfully: ${name}`);
+      Log.info(`URL registered successfully: ${name}`);
     } catch (err) {
       const error = new DuckDBImportError(
         err instanceof Error ? err.message : "Failed to register URL",
         undefined,
         name,
       );
-      console.error("[DuckDB] URL registration failed:", error);
+      Log.error(`URL registration failed: ${error.message}`);
       set({
         error,
         errorHistory: addErrorToHistory(error, get().errorHistory),
@@ -313,7 +282,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
 
     try {
       const fileName = `${options.format}_${Date.now()}_${file.name}`;
-      console.log(`[DuckDB] Importing file: ${file.name} as ${fileName}`);
+      Log.info(`Importing file: ${file.name} as ${fileName}`);
 
       // Register the file
       await db!.registerFileHandle(
@@ -326,14 +295,14 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
       // Import based on format
       await get().importFromRegisteredFile(fileName, options);
       await get().updateMemoryUsage();
-      console.log(`[DuckDB] File imported successfully: ${file.name}`);
+      Log.info(`File imported successfully: ${file.name}`);
     } catch (err) {
       const error = new DuckDBImportError(
         err instanceof Error ? err.message : `Failed to import ${options.format} file`,
         options.format,
         file.name,
       );
-      console.error("[DuckDB] File import failed:", error);
+      Log.error(`File import failed: ${error.message}`);
       set({
         error,
         errorHistory: addErrorToHistory(error, get().errorHistory),
@@ -347,8 +316,8 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
     ensureDuckDBReady(db, conn, "URL import");
 
     try {
-      const fileName = `${options.format}_url_${Date.now()}`;
-      console.log(`[DuckDB] Importing from URL: ${url} as ${fileName}`);
+      const fileName = `${options.format}_url_${nanoid()}`;
+      Log.info(`Importing from URL: ${url} as ${fileName}`);
 
       // Register the URL
       await db!.registerFileURL(fileName, url, duckdb.DuckDBDataProtocol.HTTP, false);
@@ -356,14 +325,14 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
       // Import based on format
       await get().importFromRegisteredFile(fileName, options);
       await get().updateMemoryUsage();
-      console.log(`[DuckDB] URL import completed successfully: ${url}`);
+      Log.info(`URL import completed successfully: ${url}`);
     } catch (err) {
       const error = new DuckDBImportError(
         err instanceof Error ? err.message : `Failed to import ${options.format} from URL`,
         options.format,
         url,
       );
-      console.error("[DuckDB] URL import failed:", error);
+      Log.error(`URL import failed: ${error.message}`);
       set({
         error,
         errorHistory: addErrorToHistory(error, get().errorHistory),
@@ -416,7 +385,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
         detect: true,
         dateFormat: "auto",
       });
-      console.log(`[DuckDB] CSV imported successfully to table: ${options.tableName}`);
+      Log.info(`CSV imported successfully to table: ${options.tableName}`);
     } catch (err) {
       throw new DuckDBImportError(
         err instanceof Error ? err.message : "Failed to import CSV",
@@ -442,7 +411,8 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
         CREATE TABLE ${options.tableName} AS 
         SELECT * FROM read_json('${fileName}'${optionsString});
       `);
-      console.log(`[DuckDB] JSON imported successfully to table: ${options.tableName}`);
+
+      Log.info(`JSON imported successfully to table: ${options.tableName}`);
     } catch (err) {
       throw new DuckDBImportError(
         err instanceof Error ? err.message : "Failed to import JSON",
@@ -461,7 +431,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
         CREATE TABLE ${options.tableName} AS 
         SELECT * FROM read_parquet('${fileName}');
       `);
-      console.log(`[DuckDB] Parquet imported successfully to table: ${options.tableName}`);
+      Log.info(`Parquet imported successfully to table: ${options.tableName}`);
     } catch (err) {
       throw new DuckDBImportError(
         err instanceof Error ? err.message : "Failed to import Parquet",
@@ -483,7 +453,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
       const runQuery = get().runQuery;
       const fileName = `table_${tableName}_${nanoid()}.${format}`;
 
-      console.log(`[DuckDB] Exporting table ${tableName} to ${format} format`);
+      Log.info(`Exporting table ${tableName} to ${format} format`);
       await runQuery(`COPY ${tableName} TO '${fileName}';`);
 
       const buffer = await db!.copyFileToBuffer(fileName);
@@ -492,7 +462,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
         throw new DuckDBExportError("Failed to read exported file buffer", format, tableName);
       }
 
-      console.log(`[DuckDB] Table exported successfully: ${tableName}`);
+      Log.info(`Table exported successfully: ${tableName}`);
       return URL.createObjectURL(new Blob([buffer]));
     } catch (err) {
       const error =
@@ -503,7 +473,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
               format,
               tableName,
             );
-      console.error("[DuckDB] Table export failed:", error);
+      Log.error(`Table export failed: ${error.message}`);
       set({
         error,
         errorHistory: addErrorToHistory(error, get().errorHistory),
@@ -529,7 +499,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
       const lastQuery = strippedQuery.split(";").pop()?.trim();
       const fileName = `results_${nanoid()}.${format}`;
 
-      console.log(`[DuckDB] Exporting query results to ${format} format`);
+      Log.info(`Exporting query results to ${format} format`);
       await runQuery(`COPY (${lastQuery}) TO '${fileName}' (FORMAT ${format})`);
 
       const buffer = await db!.copyFileToBuffer(fileName);
@@ -538,7 +508,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
         throw new DuckDBExportError("Failed to read exported results buffer", format);
       }
 
-      console.log(`[DuckDB] Results exported successfully`);
+      Log.info(`Results exported successfully`);
       return URL.createObjectURL(new Blob([buffer]));
     } catch (err) {
       const error =
@@ -548,7 +518,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
               err instanceof Error ? err.message : "Failed to export results",
               format,
             );
-      console.error("[DuckDB] Results export failed:", error);
+      Log.error(`Results export failed: ${error.message}`);
       set({
         error,
         errorHistory: addErrorToHistory(error, get().errorHistory),
@@ -564,7 +534,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
     }
 
     try {
-      console.log("[DuckDB] Resetting database...");
+      Log.info("Resetting database...");
       await conn?.close();
       await db.reset();
 
@@ -576,13 +546,13 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
         memoryUsage: null,
         error: null,
       });
-      console.log("[DuckDB] Database reset completed successfully");
+      Log.info("Database reset completed successfully");
     } catch (err) {
       const error = new DuckDBConnectionError(
         err instanceof Error ? err.message : "Failed to reset database",
         "reset",
       );
-      console.error("[DuckDB] Database reset failed:", error);
+      Log.error(`Database reset failed: ${error.message}`);
       set({
         error,
         errorHistory: addErrorToHistory(error, get().errorHistory),
@@ -593,7 +563,7 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
 
   cleanup: async () => {
     try {
-      console.log("[DuckDB] Cleaning up...");
+      Log.info("Cleaning up...");
       // Clear the memory usage interval
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const interval = (window as any).__duckdb_memory_interval;
@@ -611,10 +581,9 @@ export const useDuckDBStore = create<DuckDBState>((set, get) => ({
         memoryUsage: null,
         error: null,
       });
-      console.log("[DuckDB] Cleanup completed successfully");
+      Log.info("Cleanup completed successfully");
     } catch (err) {
-      console.error("[DuckDB] Cleanup failed:", err);
-      // Don't throw during cleanup to avoid cascading errors
+      Log.error(`Cleanup failed: ${err}`);
     }
   },
 

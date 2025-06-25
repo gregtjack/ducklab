@@ -4,12 +4,15 @@
 @import "tailwindcss" source("../");
 @import "tw-animate-css";
 
-
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  --font-sans:
+    "Inter Variable", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", "Noto Color Emoji";
+  --font-mono:
+    "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -56,11 +59,11 @@
   --card-foreground: oklch(0.141 0.005 285.823);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.718 0.145 232.0);
-  --primary-foreground: oklch(0.982 0.000 89.9);
+  --primary: oklch(0.718 0.145 232);
+  --primary-foreground: oklch(0.982 0 89.9);
   --secondary: oklch(0.96 0 none);
   --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.959 0.000 89.9);
+  --muted: oklch(0.959 0 89.9);
   --muted-foreground: oklch(0.552 0.016 285.938);
   --accent: oklch(0.94 0.001 286.375);
   --accent-foreground: oklch(0.21 0.006 285.885);

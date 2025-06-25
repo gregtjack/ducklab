@@ -16,4 +16,5 @@ export interface Notebook {
   cells: Cell[];
   lastOpened: Date;
   createdAt: Date;
+  updatedAt: Date;
 }

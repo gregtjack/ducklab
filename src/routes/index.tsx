@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useNotebookStore } from "@/store/notebook-store";
 import { Plus, Notebook, FileSpreadsheetIcon, PlusIcon } from "lucide-react";
-import { FileUpload } from "@/components/catalog/file-upload";
+import { FileUpload } from "@/components/catalog/file-import";
+import { formatDistanceToNow } from "date-fns";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -23,13 +24,11 @@ function Home() {
 
   return (
     <div className="container mx-auto px-6 py-8 max-w-4xl">
-      {/* Header */}
       <div className="mb-4">
         <p className="text-lg font-medium">Welcome to DuckPad!</p>
         <p className="text-sm text-muted-foreground">Choose a quick action to get started</p>
       </div>
 
-      {/* Quick Actions */}
       <div className="mb-8 flex gap-2">
         <Button variant="outline" onClick={handleCreateNotebook} className="w-full sm:w-auto">
           <PlusIcon />
@@ -43,7 +42,6 @@ function Home() {
         </FileUpload>
       </div>
 
-      {/* Recent Notebooks */}
       {notebooks.length > 0 ? (
         <div className="space-y-4">
           <h2 className="text-lg">Recent notebooks</h2>
@@ -59,7 +57,8 @@ function Home() {
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium truncate">{notebook.name}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {notebook.cells.length} cell{notebook.cells.length !== 1 ? "s" : ""}
+                          {notebook.cells.length} cell{notebook.cells.length !== 1 ? "s" : ""} ·{" "}
+                          {formatDistanceToNow(notebook.updatedAt)} ago
                         </p>
                       </div>
                     </div>
@@ -70,7 +69,6 @@ function Home() {
           </div>
         </div>
       ) : (
-        /* Empty State */
         <div className="text-center py-12">
           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <Notebook className="size-8 text-primary" />

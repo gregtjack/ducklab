@@ -23,7 +23,7 @@ export function NotebookView() {
     if (notebookId && activeNotebook?.id !== notebookId) {
       setActiveNotebook(notebookId);
     }
-  }, [notebookId, activeNotebook?.id, setActiveNotebook]);
+  }, [notebookId, activeNotebook?.id]);
 
   const handleAddCell = (index?: number) => {
     if (!activeNotebook) return;

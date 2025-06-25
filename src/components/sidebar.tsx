@@ -1,8 +1,9 @@
 "use client";
 
 import { Button } from "./ui/button";
-import { NotebookList } from "./notebook/nav";
+import { NotebookList } from "./notebook/list";
 import { CatalogList } from "./catalog/catalog-list";
+import { NotebookSwitcher } from "./cmd-palette";
 import { useState, useRef, useEffect } from "react";
 import { PanelLeftInactive, PanelLeft, InfoIcon, Settings } from "lucide-react";
 import { Link } from "@tanstack/react-router";
@@ -26,9 +27,10 @@ function SidebarHeader({ isDocked, onToggleDock }: SidebarHeaderProps) {
         <Link to="/">DuckPad</Link>
       </div>
       <div className="flex items-center gap-2">
+        <NotebookSwitcher />
         <Button
           variant="ghost"
-          className="p-0 size-6 text-muted-foreground"
+          className="p-0.5 size-6 text-muted-foreground"
           onClick={onToggleDock}
           title={isDocked ? "Undock sidebar" : "Dock sidebar"}
         >
@@ -45,7 +47,7 @@ function SidebarFooter() {
       <Link
         to="/settings"
         className="flex items-center gap-2 w-full p-2 rounded-lg hover:bg-primary/15"
-        activeProps={{ className: "bg-primary/10 border border-primary/20" }}
+        activeProps={{ className: "bg-primary/10 border border-primary/20 text-primary" }}
       >
         <Settings className="size-4" />
         <span className="text-sm">Settings</span>
@@ -53,7 +55,7 @@ function SidebarFooter() {
       <Link
         to="/about"
         className="flex items-center gap-2 w-full p-2 rounded-lg hover:bg-primary/15"
-        activeProps={{ className: "bg-primary/10 border border-primary/20" }}
+        activeProps={{ className: "bg-primary/10 border border-primary/20 text-primary" }}
       >
         <InfoIcon className="size-4" />
         <span className="text-sm">About DuckPad</span>

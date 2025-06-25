@@ -22,8 +22,8 @@ function RouteComponent() {
         <div className="space-y-8">
           <div className="space-y-2 leading-relaxed">
             <p>
-              DuckPad is an open source, browser-based data analytics tool that runs entirely in
-              your web browser. It's built on top of{" "}
+              DuckPad is a simple yet powerful data analytics tool that runs entirely in your web
+              browser. It's built on top of{" "}
               <a
                 className="text-primary hover:underline"
                 href="https://duckdb.org"
@@ -32,7 +32,7 @@ function RouteComponent() {
               >
                 DuckDB
               </a>
-              , a fast in-memory columnar database.
+              , a fast in-memory columnar database powered by WebAssembly.
             </p>
             <p>All data processing happens locally, so your data never leaves your computer.</p>
           </div>
@@ -47,7 +47,7 @@ function RouteComponent() {
                 Interactive SQL notebooks with data export, syntax highlighting, and basic
                 auto-completion
               </li>
-              <li>100% client-side processing with WebAssembly - no data leaves your browser</li>
+              <li>100% client-side processing - no data leaves your browser</li>
               <li>No setup required</li>
             </ul>
           </div>

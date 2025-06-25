@@ -62,8 +62,8 @@ export function NotebookList() {
                 key={notebook.id}
                 to="/notebook/$id"
                 params={{ id: notebook.id }}
-                activeProps={{ className: "bg-primary/10 border border-primary/20" }}
-                className={`w-full flex items-center justify-between p-2 rounded-lg h-9 hover:bg-primary/15 cursor-pointer hover:text-accent-foreground`}
+                activeProps={{ className: "bg-primary/10 border border-primary/20 text-primary" }}
+                className={`w-full flex items-center justify-between p-2 rounded-lg h-9 hover:bg-primary/15 cursor-pointer`}
               >
                 <div className="flex items-center gap-2 truncate">
                   <span className="text-lg">{notebook.icon}</span>

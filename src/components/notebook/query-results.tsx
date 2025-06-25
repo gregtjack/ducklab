@@ -98,8 +98,7 @@ export function QueryResults({ results, isLoading, error }: QueryResultsProps) {
       <div className="border-t text-xs text-muted-foreground bg-card">
         <div className="flex items-center gap-1 p-1">
           <span>
-            Returned {results.table.numRows} row(s) in{" "}
-            {prettyMs(results.duration, { compact: true })}
+            {results.table.numRows} row(s) in {prettyMs(results.duration, { compact: true })}
           </span>
         </div>
       </div>

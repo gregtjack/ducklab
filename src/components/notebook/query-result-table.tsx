@@ -1,7 +1,16 @@
 import * as arrow from "apache-arrow";
 import { TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Hash, Calendar, Binary, List, HelpCircle, ClockIcon, TypeIcon, FlagTriangleRight } from "lucide-react";
+import {
+  Hash,
+  Calendar,
+  Binary,
+  List,
+  HelpCircle,
+  ClockIcon,
+  TypeIcon,
+  FlagTriangleRight,
+} from "lucide-react";
 import { match, P } from "ts-pattern";
 import { useState } from "react";
 import { TableVirtuoso } from "react-virtuoso";

@@ -36,8 +36,9 @@ export function SettingsLayout() {
             return (
               <button
                 key={section.id}
-                className={`flex items-center w-full justify-start hover:bg-accent gap-3 px-2 py-1.5 rounded-md transition-colors ${isActive ? "bg-accent" : ""
-                  }`}
+                className={`flex items-center w-full justify-start hover:bg-accent gap-3 px-2 py-1.5 rounded-md transition-colors ${
+                  isActive ? "bg-accent" : ""
+                }`}
                 onClick={() => setActiveSection(section.id)}
               >
                 <Icon className="size-4" />

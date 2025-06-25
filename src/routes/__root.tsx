@@ -11,6 +11,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { useDuckDBStore } from "@/store/duckdb-store";
 import { Sidebar } from "@/components/sidebar";
 import { useEffect } from "react";
+import { useNotebookStore } from "@/store/notebook-store";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -66,6 +67,7 @@ function RootComponent() {
 
   useEffect(() => {
     initialize().catch(console.error);
+    useNotebookStore.persist.rehydrate();
   }, [initialize]);
 
   return (

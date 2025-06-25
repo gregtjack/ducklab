@@ -20,6 +20,7 @@ interface NotebookState {
   activeNotebookId: string | null;
   isLoading: boolean;
 
+  setIsLoading: (isLoading: boolean) => void;
   createNotebook: (name?: string) => Promise<string>;
   removeNotebook: (id: string) => Promise<void>;
   setActiveNotebook: (id: string | null) => void;
@@ -39,6 +40,7 @@ export const useNotebookStore = create<NotebookState>()(
           icon: "🦆",
           lastOpened: new Date(),
           createdAt: new Date(),
+          updatedAt: new Date(),
           cells: [
             {
               id: genUniqueId(),
@@ -54,6 +56,10 @@ export const useNotebookStore = create<NotebookState>()(
       activeNotebookId: null,
       isLoading: true,
 
+      setIsLoading: (isLoading: boolean) => {
+        set({ isLoading });
+      },
+
       createNotebook: async (name: string = "Untitled") => {
         const newNotebook: Notebook = {
           id: genUniqueId(),
@@ -61,6 +67,7 @@ export const useNotebookStore = create<NotebookState>()(
           icon: INITIAL_ICONS[Math.floor(Math.random() * INITIAL_ICONS.length)],
           lastOpened: new Date(),
           createdAt: new Date(),
+          updatedAt: new Date(),
           cells: [
             {
               id: genUniqueId(),
@@ -100,7 +107,9 @@ export const useNotebookStore = create<NotebookState>()(
 
       updateNotebook: async (id: string, updates: Partial<Notebook>) => {
         set(state => ({
-          notebooks: state.notebooks.map(n => (n.id === id ? { ...n, ...updates } : n)),
+          notebooks: state.notebooks.map(n =>
+            n.id === id ? { ...n, ...updates, updatedAt: new Date() } : n,
+          ),
         }));
       },
 
@@ -114,7 +123,7 @@ export const useNotebookStore = create<NotebookState>()(
                 ? [...n.cells.slice(0, index), cell, ...n.cells.slice(index)]
                 : [...n.cells, cell];
 
-            return { ...n, cells };
+            return { ...n, cells, updatedAt: new Date() };
           }),
         }));
       },
@@ -122,7 +131,13 @@ export const useNotebookStore = create<NotebookState>()(
       removeCell: async (notebookId: string, cellId: string) => {
         set(state => ({
           notebooks: state.notebooks.map(n =>
-            n.id === notebookId ? { ...n, cells: n.cells.filter(c => c.id !== cellId) } : n,
+            n.id === notebookId
+              ? {
+                  ...n,
+                  cells: n.cells.filter(c => c.id !== cellId),
+                  updatedAt: new Date(),
+                }
+              : n,
           ),
         }));
       },
@@ -134,6 +149,7 @@ export const useNotebookStore = create<NotebookState>()(
               ? {
                   ...n,
                   cells: n.cells.map(c => (c.id === cellId ? { ...c, ...updates } : c)),
+                  updatedAt: new Date(),
                 }
               : n,
           ),
@@ -164,16 +180,16 @@ export const useNotebookStore = create<NotebookState>()(
             })),
           })),
           activeNotebookId: state.activeNotebookId,
-          isLoading: state.isLoading,
+          isLoading: true,
         } as NotebookState;
       },
+      skipHydration: true,
       onRehydrateStorage: () => {
         return (state, error: unknown) => {
           if (error) {
             console.error("Error rehydrating notebook store:", error);
-          } else {
-            state!.isLoading = false;
           }
+          state!.isLoading = false;
         };
       },
     },
