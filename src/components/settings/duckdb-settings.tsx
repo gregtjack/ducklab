@@ -62,98 +62,72 @@ export function DuckDBSettings() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <h3 className="text-lg font-semibold">DuckDB Settings</h3>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">DuckDB</h2>
+        <Badge className={getStatusColor()}>{getStatusText()}</Badge>
       </div>
 
-      {/* Status Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">Database Status</CardTitle>
-          <CardDescription>Current status and health of DuckDB</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {getStatusIcon()}
-              <span className="font-medium">Status</span>
-            </div>
-            <Badge className={getStatusColor()}>{getStatusText()}</Badge>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Memory Usage</span>
           </div>
+          <span className="text-sm font-mono">
+            {memoryUsage !== null ? prettyBytes(Number(memoryUsage)) : "0 B"}
+          </span>
+        </div>
+      </div>
 
-          {/* Memory Usage */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <HardDrive className="h-4 w-4" />
-                <span className="font-medium">Memory Usage</span>
-              </div>
-              <span className="text-sm font-mono">
-                {memoryUsage !== null ? prettyBytes(Number(memoryUsage)) : "0 B"}
-              </span>
-            </div>
+      {error && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="size-4 text-destructive" />
+            <span className="font-medium text-destructive">Recent error</span>
           </div>
-
-          {/* Error Display */}
-          {error && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="size-4 text-destructive" />
-                <span className="font-medium text-destructive">Recent error</span>
-              </div>
-              <p className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
-                {error.message}
-              </p>
-            </div>
-          )}
-
-          {/* Error History */}
-          {errorHistory && errorHistory.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-destructive" />
-                <span className="font-medium text-destructive">Error History</span>
-              </div>
-              <div className="space-y-1 max-h-32 overflow-y-auto">
-                {errorHistory.map((err, i) => (
-                  <p
-                    key={i}
-                    className="text-sm text-destructive bg-destructive/5 px-2 py-1 rounded text-wrap"
-                  >
-                    {err.message}
-                  </p>
-                ))}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Actions Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Database Actions</CardTitle>
-          <CardDescription>Manage DuckDB</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => updateMemoryUsage()} disabled={isLoading}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh Memory Usage
-            </Button>
-            <Button variant="destructive" onClick={() => reset()} disabled={isLoading}>
-              <Database className="h-4 w-4 mr-2" />
-              Reset Database
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Warning: Resetting the database will clear all data and tables.
+          <p className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
+            {error.message}
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      )}
 
-      {/* Configuration Info */}
+      {errorHistory && errorHistory.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-destructive" />
+            <span className="font-medium text-destructive">Error History</span>
+          </div>
+          <div className="space-y-1 max-h-32 overflow-y-auto">
+            {errorHistory.map((err, i) => (
+              <p
+                key={i}
+                className="text-sm text-destructive bg-destructive/5 px-2 py-1 rounded text-wrap"
+              >
+                {err.message}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+
+
+      <div className="flex gap-2 space-y-1 flex-col">
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => updateMemoryUsage()} disabled={isLoading}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh Memory Usage
+          </Button>
+          <Button variant="destructive" onClick={() => reset()} disabled={isLoading}>
+            <Database className="h-4 w-4 mr-2" />
+            Reset Database
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Warning: Resetting the database will clear all data and tables.
+        </p>
+      </div>
+
       {loadingVersion ? (
         <div className="flex items-center justify-center h-full">
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -161,25 +135,24 @@ export function DuckDBSettings() {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Configuration</CardTitle>
-            <CardDescription>Current DuckDB configuration details</CardDescription>
+            <CardTitle>Info</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Engine:</span>
-                <span>DuckDB WebAssembly</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Storage:</span>
-                <span>In-Memory</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Version:</span>
-                <span>{version}</span>
-              </div>
-            </div>
-          </CardContent>
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Engine:</span>
+            <span>DuckDB WebAssembly</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Storage:</span>
+            <span>In-Memory</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Version:</span>
+            <span>{version}</span>
+          </div>
+        </div>
+        </CardContent>
         </Card>
       )}
     </div>

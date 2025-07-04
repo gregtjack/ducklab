@@ -194,7 +194,7 @@ export function FileUpload({ children }: FileUploadProps) {
         <DialogHeader className="space-y-3">
           <DialogTitle className="flex items-center gap-3 text-lg">
             <Database className="h-6 w-6 text-primary" />
-            Create a new table
+            Add a new dataset
           </DialogTitle>
           <DialogDescription>
             Import data from a file or URL to create a new table in your database. All data is
@@ -350,7 +350,7 @@ export function FileUpload({ children }: FileUploadProps) {
             </div>
           )}
 
-          <Button onClick={handleSubmit} className="w-full h-11 text-base font-medium">
+          <Button onClick={handleSubmit} className="w-full">
             <ImportIcon className="mr-2 h-4 w-4" />
             Import Data
           </Button>

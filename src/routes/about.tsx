@@ -22,7 +22,7 @@ function RouteComponent() {
         <div className="space-y-8">
           <div className="space-y-2 leading-relaxed">
             <p>
-              DuckPad is a simple yet powerful data analytics tool that runs entirely in your web
+              DuckPad is a simple data analytics tool that runs entirely in your web
               browser. It's built on top of{" "}
               <a
                 className="text-primary hover:underline"

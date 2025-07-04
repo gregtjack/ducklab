@@ -12,6 +12,8 @@ import { useDuckDBStore } from "@/store/duckdb-store";
 import { Sidebar } from "@/components/sidebar";
 import { useEffect } from "react";
 import { useNotebookStore } from "@/store/notebook-store";
+import interFontCss from "@fontsource-variable/inter?url";
+import jetbrainsMonoFontCss from "@fontsource-variable/jetbrains-mono?url";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -49,6 +51,8 @@ export const Route = createRootRoute({
       },
       { rel: "manifest", href: "/site.webmanifest", color: "#fffff" },
       { rel: "icon", href: "/favicon.ico" },
+      { rel: "stylesheet", href: interFontCss },
+      { rel: "stylesheet", href: jetbrainsMonoFontCss },
     ],
   }),
   errorComponent: props => {

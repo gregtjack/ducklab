@@ -21,7 +21,6 @@ export function QueryEditor({ initialQuery, onQueryChange, onFocus, onBlur }: Qu
   const lastSyncedQueryRef = useRef(initialQuery);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Debounced update to parent
   const debouncedUpdate = useCallback(
     (newQuery: string) => {
       if (debounceTimeoutRef.current) {
@@ -31,12 +30,11 @@ export function QueryEditor({ initialQuery, onQueryChange, onFocus, onBlur }: Qu
       debounceTimeoutRef.current = setTimeout(() => {
         onQueryChange(newQuery);
         lastSyncedQueryRef.current = newQuery;
-      }, 300); // 300ms debounce
+      }, 300);
     },
     [onQueryChange],
   );
 
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (debounceTimeoutRef.current) {
@@ -54,7 +52,6 @@ export function QueryEditor({ initialQuery, onQueryChange, onFocus, onBlur }: Qu
   useEffect(() => {
     if (!monaco) return;
 
-    // Register completion provider for table names
     const completionProvider = monaco.languages.registerCompletionItemProvider("sql", {
       provideCompletionItems: (model, position) => {
         const suggestions: {
@@ -72,7 +69,6 @@ export function QueryEditor({ initialQuery, onQueryChange, onFocus, onBlur }: Qu
           };
         }[] = [];
 
-        // Get the word range for replacement
         const word = model.getWordUntilPosition(position);
         const range = {
           startLineNumber: position.lineNumber,
@@ -81,7 +77,6 @@ export function QueryEditor({ initialQuery, onQueryChange, onFocus, onBlur }: Qu
           endColumn: word.endColumn,
         };
 
-        // Add table names from catalog
         datasets.forEach(dataset => {
           suggestions.push({
             label: dataset.tableName,
@@ -98,12 +93,11 @@ export function QueryEditor({ initialQuery, onQueryChange, onFocus, onBlur }: Qu
                 dataset.isInsertable ? "**Insertable:** Yes" : "**Insertable:** No",
               ].join("\n"),
             },
-            sortText: `0_${dataset.tableName}`, // Ensure tables appear first
+            sortText: `0_${dataset.tableName}`,
             range: range,
           });
         });
 
-        // Add common SQL keywords
         const sqlKeywords = [
           "SELECT",
           "FROM",
@@ -139,7 +133,7 @@ export function QueryEditor({ initialQuery, onQueryChange, onFocus, onBlur }: Qu
             label: keyword,
             kind: monaco.languages.CompletionItemKind.Keyword,
             insertText: keyword,
-            sortText: `1_${keyword}`, // Keywords appear after tables
+            sortText: `1_${keyword}`,
             range: range,
           });
         });

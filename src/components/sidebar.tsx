@@ -46,16 +46,16 @@ function SidebarFooter() {
     <div className="flex flex-col gap-1 px-3 pb-3">
       <Link
         to="/settings"
-        className="flex items-center gap-2 w-full p-2 rounded-lg hover:bg-primary/15"
-        activeProps={{ className: "bg-primary/10 border border-primary/20 text-primary" }}
+        className="flex items-center gap-2 w-full p-2 rounded-lg hover:bg-accent"
+        activeProps={{ className: "bg-accent font-medium" }}
       >
         <Settings className="size-4" />
         <span className="text-sm">Settings</span>
       </Link>
       <Link
         to="/about"
-        className="flex items-center gap-2 w-full p-2 rounded-lg hover:bg-primary/15"
-        activeProps={{ className: "bg-primary/10 border border-primary/20 text-primary" }}
+        className="flex items-center gap-2 w-full p-2 rounded-lg hover:bg-accent"
+        activeProps={{ className: "bg-accent font-medium" }}
       >
         <InfoIcon className="size-4" />
         <span className="text-sm">About DuckPad</span>
