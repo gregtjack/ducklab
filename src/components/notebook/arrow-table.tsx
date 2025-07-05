@@ -42,13 +42,9 @@ const getDataTypeIcon = (type: arrow.DataType) => {
       ),
       () => Hash,
     )
-    .with(P.union(P.instanceOf(arrow.DateDay), P.instanceOf(arrow.DateMillisecond)), () => (
-      Calendar
-    ))
+    .with(P.union(P.instanceOf(arrow.DateDay), P.instanceOf(arrow.DateMillisecond)), () => Calendar)
     .with(P.instanceOf(arrow.Timestamp), () => ClockIcon)
-    .with(P.union(P.instanceOf(arrow.Utf8), P.instanceOf(arrow.LargeUtf8)), () => (
-      TypeIcon
-    ))
+    .with(P.union(P.instanceOf(arrow.Utf8), P.instanceOf(arrow.LargeUtf8)), () => TypeIcon)
     .with(P.instanceOf(arrow.Binary), () => Binary)
     .with(P.instanceOf(arrow.List), () => List)
     .with(P.instanceOf(arrow.Bool), () => FlagTriangleRight)

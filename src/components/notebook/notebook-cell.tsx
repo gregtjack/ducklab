@@ -138,7 +138,12 @@ function NotebookCell({ cellId, index }: NotebookCellProps) {
   };
 
   return (
-    <motion.div initial={{ scale: 0.90, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex flex-col" ref={cellRef}>
+    <motion.div
+      initial={{ scale: 0.9, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      className="flex flex-col"
+      ref={cellRef}
+    >
       <div className="flex w-full gap-2 min-w-0">
         <div className="flex flex-col h-fit items-center gap-2 flex-shrink-0">
           <div className="text-sm text-muted-foreground font-mono">{index + 1}</div>

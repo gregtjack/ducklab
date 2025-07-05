@@ -2,13 +2,7 @@ import { useDuckDBStore } from "@/store/duckdb-store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Database,
-  AlertCircle,
-  Loader2,
-  RefreshCw,
-  AlertTriangle,
-} from "lucide-react";
+import { Database, AlertCircle, Loader2, RefreshCw, AlertTriangle } from "lucide-react";
 import prettyBytes from "pretty-bytes";
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
@@ -109,7 +103,6 @@ export function DuckDBSettings() {
         </div>
       )}
 
-
       <div className="flex gap-2 space-y-1 flex-col">
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => updateMemoryUsage()} disabled={isLoading}>
@@ -136,21 +129,21 @@ export function DuckDBSettings() {
             <CardTitle>Info</CardTitle>
           </CardHeader>
           <CardContent>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Engine:</span>
-            <span>DuckDB WebAssembly</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Storage:</span>
-            <span>In-Memory</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Version:</span>
-            <span>{version}</span>
-          </div>
-        </div>
-        </CardContent>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Engine:</span>
+                <span>DuckDB WebAssembly</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Storage:</span>
+                <span>In-Memory</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Version:</span>
+                <span>{version}</span>
+              </div>
+            </div>
+          </CardContent>
         </Card>
       )}
     </section>
