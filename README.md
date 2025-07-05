@@ -1,12 +1,12 @@
 # DuckPad
 
-DuckPad is an in-browser data analytics toolkit built on top of DuckDB and WebAssembly. It features a modern notebook-style query interface, local and URL file imports, and file conversion capabilities.
+DuckPad is an in-browser data analytics toolkit. It features a modern notebook-style query interface, local and remote file imports, and file conversion capabilities, all powered by [DuckDB WASM](https://github.com/duckdb/duckdb-wasm) under the hood.
 
 Future work:
 
 - Excel file import/export support
 - Data visualization (Vega?)
-- Some kind of optional cloud save functionality?
+- Optional cloud save/share functionality?
 
 ## Getting started
 
@@ -30,6 +30,6 @@ bun install
 bun dev
 ```
 
-## Acknowledgments
+## Inspiration
 
-I want to give shout-outs to [DataKit](https://datakit.page), [TabLab](https://tablab.com), and [MotherDuck](https://motherduck.com) for inspiring this project.
+Shout out to [DataKit](https://datakit.page) for inspiring this project, and [MotherDuck](https://motherduck.com) for inspiring the notebook interface style.
