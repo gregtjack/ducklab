@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Database,
   AlertCircle,
-  CheckCircle,
   Loader2,
   RefreshCw,
   AlertTriangle,
