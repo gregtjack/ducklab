@@ -11,7 +11,7 @@ import { ResizablePanel, ResizableHandle, ResizablePanelGroup } from "@/componen
 import { cn } from "@/lib/utils";
 import { TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 
 interface NotebookCellProps {
   cellId: string;

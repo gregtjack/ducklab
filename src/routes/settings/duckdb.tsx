@@ -48,12 +48,6 @@ export function DuckDBSettings() {
     });
   }, []);
 
-  const getStatusIcon = () => {
-    if (isLoading) return <Loader2 className="h-4 w-4 animate-spin" />;
-    if (error) return <AlertCircle className="h-4 w-4 text-destructive" />;
-    return <CheckCircle className="h-4 w-4 text-green-500" />;
-  };
-
   const getStatusText = () => {
     if (isLoading) return "Initializing...";
     if (error) return "Error";
