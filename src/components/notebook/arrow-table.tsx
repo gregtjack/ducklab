@@ -29,32 +29,7 @@ interface CellInspectorProps {
   onClose: () => void;
 }
 
-function CellInspector({ value, type, column, isOpen, onClose }: CellInspectorProps) {
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {getDataTypeIcon(type, 18)}
-            <span>{column}</span>
-          </DialogTitle>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground">Type</h4>
-            <p className="text-sm font-mono">{type.toString()}</p>
-          </div>
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground">Value</h4>
-            <p className="text-sm font-mono break-all">{String(value)}</p>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-const getDataTypeIcon = (type: arrow.DataType, iconSize: number = 12) => {
+const getDataTypeIcon = (type: arrow.DataType) => {
   return match(type)
     .with(
       P.union(
@@ -65,19 +40,19 @@ const getDataTypeIcon = (type: arrow.DataType, iconSize: number = 12) => {
         P.instanceOf(arrow.Uint64),
         P.instanceOf(arrow.Float),
       ),
-      () => <Hash size={iconSize} />,
+      () => Hash,
     )
     .with(P.union(P.instanceOf(arrow.DateDay), P.instanceOf(arrow.DateMillisecond)), () => (
-      <Calendar size={iconSize} />
+      Calendar
     ))
-    .with(P.instanceOf(arrow.Timestamp), () => <ClockIcon size={iconSize} />)
+    .with(P.instanceOf(arrow.Timestamp), () => ClockIcon)
     .with(P.union(P.instanceOf(arrow.Utf8), P.instanceOf(arrow.LargeUtf8)), () => (
-      <TypeIcon size={iconSize} />
+      TypeIcon
     ))
-    .with(P.instanceOf(arrow.Binary), () => <Binary size={iconSize} />)
-    .with(P.instanceOf(arrow.List), () => <List size={iconSize} />)
-    .with(P.instanceOf(arrow.Bool), () => <FlagTriangleRight size={iconSize} />)
-    .otherwise(() => <HelpCircle size={iconSize} />);
+    .with(P.instanceOf(arrow.Binary), () => Binary)
+    .with(P.instanceOf(arrow.List), () => List)
+    .with(P.instanceOf(arrow.Bool), () => FlagTriangleRight)
+    .otherwise(() => HelpCircle);
 };
 
 const isNumberType = (type: arrow.DataType) =>
@@ -96,7 +71,33 @@ const isNumberType = (type: arrow.DataType) =>
     )
     .otherwise(() => false);
 
-export function QueryResultTable({
+function CellInspector({ value, type, column, isOpen, onClose }: CellInspectorProps) {
+  const Icon = getDataTypeIcon(type);
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Icon className="size-4" />
+            <span>{column}</span>
+          </DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-muted-foreground">Type</h4>
+            <p className="text-sm font-mono">{type.toString()}</p>
+          </div>
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-muted-foreground">Value</h4>
+            <p className="text-sm font-mono break-all">{String(value)}</p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function ArrowTable({
   data,
   className,
   ...props
@@ -134,6 +135,7 @@ export function QueryResultTable({
               {columns.map((column, index) => {
                 const field = data.schema.fields.find(f => f.name === column);
                 const dataType = field?.type;
+                const Icon = getDataTypeIcon(dataType);
                 return (
                   <th
                     key={column}
@@ -147,7 +149,7 @@ export function QueryResultTable({
                       <TooltipTrigger>
                         <div className={`flex items-center gap-1.5`}>
                           {column}
-                          {dataType && getDataTypeIcon(dataType)}
+                          {dataType && <Icon className="size-3" />}
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>

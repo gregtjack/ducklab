@@ -81,7 +81,7 @@ export function QueryEditor({ initialQuery, onQueryChange, onFocus, onBlur }: Qu
           suggestions.push({
             label: dataset.tableName,
             kind: monaco.languages.CompletionItemKind.Class,
-            insertText: `"${dataset.tableName}"`,
+            insertText: `${dataset.tableName}`,
             detail: `Table: ${dataset.tableName}`,
             documentation: {
               value: [
@@ -90,7 +90,6 @@ export function QueryEditor({ initialQuery, onQueryChange, onFocus, onBlur }: Qu
                 `**Type:** ${dataset.fileType}`,
                 `**Rows:** ${dataset.rowCount ? dataset.rowCount.toString() : "Unknown"}`,
                 `**Size:** ${dataset.size ? dataset.size.toString() : "Unknown"}`,
-                dataset.isInsertable ? "**Insertable:** Yes" : "**Insertable:** No",
               ].join("\n"),
             },
             sortText: `0_${dataset.tableName}`,
@@ -144,7 +143,6 @@ export function QueryEditor({ initialQuery, onQueryChange, onFocus, onBlur }: Qu
       },
     });
 
-    // Register hover provider for table information
     const hoverProvider = monaco.languages.registerHoverProvider("sql", {
       provideHover: (model, position) => {
         const word = model.getWordAtPosition(position);

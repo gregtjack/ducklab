@@ -1,6 +1,6 @@
 "use client";
 
-import { QueryResultTable } from "./query-result-table";
+import { ArrowTable } from "./arrow-table";
 import prettyMs from "pretty-ms";
 import { DownloadIcon, Loader2, Maximize2, Minimize2 } from "lucide-react";
 import { useState } from "react";
@@ -54,7 +54,7 @@ export function QueryResults({ results, isLoading, error }: QueryResultsProps) {
     const url = await exportResults(results, format);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `ducklab_query_results_${new Date().toISOString()}.${format}`;
+    a.download = `duckpad_query_results_${new Date().toISOString()}.${format}`;
     a.click();
   };
 
@@ -94,7 +94,7 @@ export function QueryResults({ results, isLoading, error }: QueryResultsProps) {
           </button>
         </div>
       </div>
-      <QueryResultTable data={results.table} />
+      <ArrowTable data={results.table} />
       <div className="border-t text-xs text-muted-foreground bg-card">
         <div className="flex items-center gap-1 p-1">
           <span>

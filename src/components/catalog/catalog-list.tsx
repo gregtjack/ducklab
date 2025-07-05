@@ -25,7 +25,6 @@ export function CatalogList() {
     refreshDatasets();
     startAutoSync();
 
-    // Cleanup auto-sync when component unmounts
     return () => {
       stopAutoSync();
     };

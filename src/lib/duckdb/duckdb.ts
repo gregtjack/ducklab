@@ -3,18 +3,15 @@ import { DuckDBConnectionError } from "@/lib/duckdb/errors";
 
 const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
 
-// Configuration
 const TIMEOUT_MS = 30000;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
 
-// State
 let DB: duckdb.AsyncDuckDB | null = null;
 let worker: Worker | null = null;
 let isInitializing = false;
 let initPromise: Promise<duckdb.AsyncDuckDB> | null = null;
 
-// Utilities
 const timeout = <T>(promise: Promise<T>, ms: number) =>
   Promise.race([
     promise,
@@ -68,7 +65,6 @@ const initializeWithRetry = async (): Promise<duckdb.AsyncDuckDB> => {
       DB = new duckdb.AsyncDuckDB(logger, worker);
       await timeout(DB.instantiate(bundle.mainModule, bundle.pthreadWorker), TIMEOUT_MS);
 
-      // Verify it works
       const conn = await DB.connect();
       await timeout(conn.query("SELECT 1"), 5000);
 
@@ -76,7 +72,6 @@ const initializeWithRetry = async (): Promise<duckdb.AsyncDuckDB> => {
     } catch (error) {
       lastError = error instanceof Error ? error : new Error("Unknown error");
 
-      // Clean up failed attempt
       if (DB) {
         try {
           await DB.terminate();
@@ -94,7 +89,6 @@ const initializeWithRetry = async (): Promise<duckdb.AsyncDuckDB> => {
         worker = null;
       }
 
-      // Don't retry on unsupported features
       if (
         error instanceof DuckDBConnectionError &&
         (error.message.includes("not supported") || error.message.includes("WebAssembly"))

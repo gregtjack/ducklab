@@ -9,25 +9,43 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as SettingsRouteRouteImport } from './routes/settings/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SettingsIndexRouteImport } from './routes/settings/index'
+import { Route as SettingsGeneralRouteImport } from './routes/settings/general'
+import { Route as SettingsDuckdbRouteImport } from './routes/settings/duckdb'
 import { Route as NotebookIdRouteImport } from './routes/notebook.$id'
 
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRouteRoute = SettingsRouteRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsRouteRoute,
+} as any)
+const SettingsGeneralRoute = SettingsGeneralRouteImport.update({
+  id: '/general',
+  path: '/general',
+  getParentRoute: () => SettingsRouteRoute,
+} as any)
+const SettingsDuckdbRoute = SettingsDuckdbRouteImport.update({
+  id: '/duckdb',
+  path: '/duckdb',
+  getParentRoute: () => SettingsRouteRoute,
 } as any)
 const NotebookIdRoute = NotebookIdRouteImport.update({
   id: '/notebook/$id',
@@ -37,52 +55,81 @@ const NotebookIdRoute = NotebookIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRouteRouteWithChildren
   '/about': typeof AboutRoute
-  '/settings': typeof SettingsRoute
   '/notebook/$id': typeof NotebookIdRoute
+  '/settings/duckdb': typeof SettingsDuckdbRoute
+  '/settings/general': typeof SettingsGeneralRoute
+  '/settings/': typeof SettingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/settings': typeof SettingsRoute
   '/notebook/$id': typeof NotebookIdRoute
+  '/settings/duckdb': typeof SettingsDuckdbRoute
+  '/settings/general': typeof SettingsGeneralRoute
+  '/settings': typeof SettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRouteRouteWithChildren
   '/about': typeof AboutRoute
-  '/settings': typeof SettingsRoute
   '/notebook/$id': typeof NotebookIdRoute
+  '/settings/duckdb': typeof SettingsDuckdbRoute
+  '/settings/general': typeof SettingsGeneralRoute
+  '/settings/': typeof SettingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/settings' | '/notebook/$id'
+  fullPaths:
+    | '/'
+    | '/settings'
+    | '/about'
+    | '/notebook/$id'
+    | '/settings/duckdb'
+    | '/settings/general'
+    | '/settings/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/settings' | '/notebook/$id'
-  id: '__root__' | '/' | '/about' | '/settings' | '/notebook/$id'
+  to:
+    | '/'
+    | '/about'
+    | '/notebook/$id'
+    | '/settings/duckdb'
+    | '/settings/general'
+    | '/settings'
+  id:
+    | '__root__'
+    | '/'
+    | '/settings'
+    | '/about'
+    | '/notebook/$id'
+    | '/settings/duckdb'
+    | '/settings/general'
+    | '/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SettingsRouteRoute: typeof SettingsRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
-  SettingsRoute: typeof SettingsRoute
   NotebookIdRoute: typeof NotebookIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/about': {
       id: '/about'
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -91,6 +138,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof SettingsRouteRoute
+    }
+    '/settings/general': {
+      id: '/settings/general'
+      path: '/general'
+      fullPath: '/settings/general'
+      preLoaderRoute: typeof SettingsGeneralRouteImport
+      parentRoute: typeof SettingsRouteRoute
+    }
+    '/settings/duckdb': {
+      id: '/settings/duckdb'
+      path: '/duckdb'
+      fullPath: '/settings/duckdb'
+      preLoaderRoute: typeof SettingsDuckdbRouteImport
+      parentRoute: typeof SettingsRouteRoute
     }
     '/notebook/$id': {
       id: '/notebook/$id'
@@ -102,10 +170,26 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface SettingsRouteRouteChildren {
+  SettingsDuckdbRoute: typeof SettingsDuckdbRoute
+  SettingsGeneralRoute: typeof SettingsGeneralRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
+}
+
+const SettingsRouteRouteChildren: SettingsRouteRouteChildren = {
+  SettingsDuckdbRoute: SettingsDuckdbRoute,
+  SettingsGeneralRoute: SettingsGeneralRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
+}
+
+const SettingsRouteRouteWithChildren = SettingsRouteRoute._addFileChildren(
+  SettingsRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  SettingsRouteRoute: SettingsRouteRouteWithChildren,
   AboutRoute: AboutRoute,
-  SettingsRoute: SettingsRoute,
   NotebookIdRoute: NotebookIdRoute,
 }
 export const routeTree = rootRouteImport

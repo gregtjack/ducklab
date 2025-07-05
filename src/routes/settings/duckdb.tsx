@@ -1,6 +1,6 @@
 import { useDuckDBStore } from "@/store/duckdb-store";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Database,
@@ -8,11 +8,16 @@ import {
   CheckCircle,
   Loader2,
   RefreshCw,
-  HardDrive,
   AlertTriangle,
 } from "lucide-react";
 import prettyBytes from "pretty-bytes";
 import { useEffect, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { SectionHeader } from "@/components/settings/section-header";
+
+export const Route = createFileRoute("/settings/duckdb")({
+  component: DuckDBSettings,
+});
 
 export function DuckDBSettings() {
   const {
@@ -62,12 +67,12 @@ export function DuckDBSettings() {
   };
 
   return (
-    <div className="space-y-4">
+    <section id="duckdb" className="space-y-4">
+      <SectionHeader title="DuckDB" fragment="duckdb" />
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">DuckDB</h2>
+        <h2 className="font-medium">Status</h2>
         <Badge className={getStatusColor()}>{getStatusText()}</Badge>
       </div>
-
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
@@ -155,6 +160,6 @@ export function DuckDBSettings() {
         </CardContent>
         </Card>
       )}
-    </div>
+    </section>
   );
 }

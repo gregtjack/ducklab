@@ -10,10 +10,10 @@ const randomDemoQueries = [
   "SELECT current_timestamp as now",
   "SELECT pi() as pi",
   "SELECT uuid() as unique_id",
-  "SELECT concat('Welcome', ' ', 'to', ' ', 'DuckLab!') as greeting",
+  "SELECT concat('Welcome', ' ', 'to', ' ', 'DuckPad!') as greeting",
 ];
 
-const INITIAL_ICONS = ["🌊", "📊", "📈", "🔍", "📝", "💡", "🗂️", "📓", "🔮", "⚡️"];
+const INITIAL_ICONS = ["🌊", "📊", "📈", "🔍", "📝", "💡", "🗂️", "📓", "🔮", "⚡️", "🦆"];
 
 interface NotebookState {
   notebooks: Notebook[];

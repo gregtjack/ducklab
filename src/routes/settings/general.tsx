@@ -1,14 +1,21 @@
 import { SunIcon, MoonIcon, Monitor } from "lucide-react";
-import { useTheme } from "../theme-provider";
-import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
+import { useTheme } from "../../components/theme-provider";
+import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { type Theme } from "@/components/theme-provider"
+import { createFileRoute } from "@tanstack/react-router";
+import { SectionHeader } from "@/components/settings/section-header";
+
+export const Route = createFileRoute("/settings/general")({
+  component: GeneralSettings,
+});
 
 export function GeneralSettings() {
   const { theme, setTheme } = useTheme();
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Theme</h2>
-      <div className="space-y-4">
+      <section id="theme" className="space-y-4">
+        <SectionHeader title="Theme" fragment="theme" />
+        <div className="space-y-4">
           <div className="flex">
             <Tabs className="w-full" defaultValue={theme} onValueChange={(value) => setTheme(value as Theme)}>
               <TabsList className="w-full">
@@ -24,10 +31,11 @@ export function GeneralSettings() {
                   <MoonIcon />
                   Dark
                 </TabsTrigger>
-                </TabsList>
+              </TabsList>
             </Tabs>
           </div>
         </div>
+      </section>
     </div>
   );
 }
