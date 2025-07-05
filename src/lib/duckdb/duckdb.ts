@@ -164,10 +164,8 @@ export function getDuckDBState() {
   };
 }
 
-// Auto-cleanup on page unload
 if (typeof window !== "undefined") {
   window.addEventListener("beforeunload", () => {
-    alert("beforeunload");
     if (worker) worker.terminate();
   });
 }

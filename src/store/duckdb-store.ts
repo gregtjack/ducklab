@@ -14,15 +14,9 @@ import { type ImportOptions } from "@/lib/types/files";
 import { nanoid } from "nanoid";
 
 const Log = {
-  info: (message: string) => {
-    console.log(`[DuckDBStore] ${message}`);
-  },
-  error: (message: string) => {
-    console.error(`[DuckDBStore] ${message}`);
-  },
-  warn: (message: string) => {
-    console.warn(`[DuckDBStore] ${message}`);
-  },
+  info: (message: string) => console.log(`[DuckDBStore] ${message}`),
+  error: (message: string) => console.error(`[DuckDBStore] ${message}`),
+  warn: (message: string) => console.warn(`[DuckDBStore] ${message}`),
 };
 
 interface DuckDBState {
@@ -32,6 +26,9 @@ interface DuckDBState {
   error: Error | null;
   errorHistory: Error[] | null;
   memoryUsage: number | null;
+}
+
+interface DuckDBActions {
   initialize: () => Promise<void>;
   installExtensions: () => Promise<void>;
   updateMemoryUsage: () => Promise<void>;
@@ -54,14 +51,11 @@ interface DuckDBState {
   clearErrors: () => void;
 }
 
-// Helper function to add error to history
 const addErrorToHistory = (error: Error, errorHistory: Error[] | null): Error[] => {
   const history = errorHistory || [];
-  // Keep only last 10 errors to prevent memory issues
   return [...history.slice(-9), error];
 };
 
-// Helper function to check if DuckDB is ready with better error message
 const ensureDuckDBReady = (
   db: duckdb.AsyncDuckDB | null,
   conn: duckdb.AsyncDuckDBConnection | null,
@@ -72,7 +66,7 @@ const ensureDuckDBReady = (
   }
 };
 
-export const useDuckDBStore = create<DuckDBState>((set, get) => ({
+export const useDuckDBStore = create<DuckDBState & DuckDBActions>((set, get) => ({
   db: null,
   conn: null,
   isLoading: true,

@@ -24,7 +24,6 @@ interface CatalogState {
   autoSyncInterval: number | null;
   isAutoSyncEnabled: boolean;
 
-  // Actions
   addDataset: (dataset: Omit<Dataset, "id" | "createdAt">) => Promise<void>;
   removeDataset: (id: string) => Promise<void>;
   updateDataset: (id: string, updates: Partial<Dataset>) => Promise<void>;
@@ -243,10 +242,8 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
   },
 
   startAutoSync: (intervalMs = 5000) => {
-    // Stop any existing auto-sync
     get().stopAutoSync();
 
-    // Start new auto-sync interval
     const interval = window.setInterval(() => {
       const { isDuckDBReady } = useDuckDBStore.getState();
       const { sync } = get();
