@@ -24,7 +24,7 @@ function SidebarHeader({ isDocked, onToggleDock }: SidebarHeaderProps) {
   return (
     <div className="px-3 py-2 flex items-center justify-between">
       <div className="text-2xl tracking-tight font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-indigo-400">
-        <Link to="/">DuckPad</Link>
+        <Link to="/">DuckLab</Link>
       </div>
       <div className="flex items-center gap-2">
         <NotebookSwitcher />
@@ -58,7 +58,7 @@ function SidebarFooter() {
         activeProps={{ className: "bg-accent font-medium" }}
       >
         <InfoIcon className="size-4" />
-        <span className="text-sm">About DuckPad</span>
+        <span className="text-sm">About DuckLab</span>
       </Link>
     </div>
   );

@@ -1,5 +1,5 @@
 {
-  description = "Development environment for DuckPad";
+  description = "Development environment for DuckLab";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -19,7 +19,7 @@
           ];
 
           shellHook = ''
-            echo "Welcome to DuckPad development environment"
+            echo "Welcome to DuckLab development environment"
             echo "Node.js version: $(node --version)"
             echo "Bun version: $(bun --version)"
           '';

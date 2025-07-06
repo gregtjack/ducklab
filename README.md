@@ -1,10 +1,11 @@
-# DuckPad
+# DuckLab
 
-DuckPad is an in-browser data analytics toolkit. It features a modern notebook-style query interface, local and remote file imports, and file conversion capabilities, all powered by [DuckDB WASM](https://github.com/duckdb/duckdb-wasm) under the hood.
+DuckLab is an in-browser data analytics toolkit. It features a modern notebook-style query interface, local and remote file imports, and file conversion capabilities, all powered by [DuckDB WASM](https://github.com/duckdb/duckdb-wasm) under the hood.
 
 Future work:
 
 - Excel file import/export support
+- Demo datasets
 - Data visualization (Vega?)
 - Optional cloud save/share functionality?
 

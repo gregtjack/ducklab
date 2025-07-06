@@ -29,4 +29,4 @@ jobs:
         run: bun run typecheck
 
       - name: Check formatting
-        run: bun run format:check
+        run: bun run fmt:check

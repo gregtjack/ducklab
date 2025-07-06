@@ -6,11 +6,11 @@ import { Cell, Notebook } from "@/lib/types/notebook";
 
 const randomDemoQueries = [
   "SELECT 1",
-  "SELECT * FROM generate_series(1, 5) as numbers",
+  "SELECT * as numbers FROM generate_series(1, 100)",
   "SELECT current_timestamp as now",
   "SELECT pi() as pi",
   "SELECT uuid() as unique_id",
-  "SELECT concat('Welcome', ' ', 'to', ' ', 'DuckPad!') as greeting",
+  "SELECT concat('Welcome', ' ', 'to', ' ', 'DuckLab!') as greeting",
 ];
 
 const INITIAL_ICONS = ["🌊", "📊", "📈", "🔍", "📝", "💡", "🗂️", "📓", "🔮", "⚡️", "🦆"];

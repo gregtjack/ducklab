@@ -1,14 +1,14 @@
 {
-  "name": "duckpad",
-  "version": "0.0.1",
-  "description": "DuckPad is a web-based interactive data analysis tool powered by DuckDB.",
+  "name": "ducklab",
+  "version": "0.1.0",
+  "description": "DuckLab is a web-based interactive data analytics toolkit powered by DuckDB.",
   "type": "module",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build && tsc --noEmit",
     "start": "node .output/server/index.mjs",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "fmt": "prettier --write .",
+    "fmt:check": "prettier --check .",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "typecheck": "tsc --noEmit"
@@ -36,7 +36,6 @@
     "@tanstack/react-router": "^1.125.1",
     "@tanstack/react-router-devtools": "^1.125.1",
     "@tanstack/react-start": "^1.125.1",
-    "@tanstack/react-virtual": "^3.13.12",
     "apache-arrow": "^17.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

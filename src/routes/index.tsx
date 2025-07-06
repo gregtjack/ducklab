@@ -25,7 +25,7 @@ function Home() {
   return (
     <div className="container mx-auto px-6 py-8 max-w-4xl">
       <div className="mb-4">
-        <p className="text-lg font-medium">Welcome to DuckPad!</p>
+        <p className="text-lg font-medium">Welcome to DuckLab!</p>
         <p className="text-sm text-muted-foreground">Choose a quick action to get started</p>
       </div>
 
